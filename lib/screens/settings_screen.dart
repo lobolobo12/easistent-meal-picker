@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/meal_structure_store.dart';
 import '../services/preferences_store.dart';
 import '../theme.dart';
+import 'scheduler_debug_screen.dart';
 
 const _navBarPad = 90.0;
 
@@ -26,6 +27,31 @@ class SettingsScreenState extends State<SettingsScreen> {
 
   final _likedCtrl = TextEditingController();
   final _dislikedCtrl = TextEditingController();
+
+  // Hidden-access counter: 5 taps on the AppBar title opens the debug log.
+  // Taps further apart than 1.5s reset the counter.
+  int _titleTapCount = 0;
+  DateTime? _lastTitleTap;
+
+  void _onTitleTap() {
+    final now = DateTime.now();
+    if (_lastTitleTap != null &&
+        now.difference(_lastTitleTap!).inMilliseconds > 1500) {
+      _titleTapCount = 0;
+    }
+    _lastTitleTap = now;
+    _titleTapCount++;
+    if (_titleTapCount >= 5) {
+      _titleTapCount = 0;
+      _openDebugScreen();
+    }
+  }
+
+  void _openDebugScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SchedulerDebugScreen()),
+    );
+  }
 
   @override
   void initState() {
@@ -133,7 +159,13 @@ class SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(title: const Text('Nastavitve')),
+      appBar: AppBar(
+        title: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _onTitleTap,
+          child: const Text('Nastavitve'),
+        ),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -169,8 +201,22 @@ class SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 32),
                   _buildLogoutSection(),
                 ],
+                const SizedBox(height: 16),
+                _buildDebugEntry(),
               ],
             ),
+    );
+  }
+
+  Widget _buildDebugEntry() {
+    return Center(
+      child: TextButton.icon(
+        onPressed: _openDebugScreen,
+        icon: const Icon(Icons.bug_report_outlined,
+            size: 16, color: kTextMuted),
+        label: const Text('Debug dnevnik',
+            style: TextStyle(fontSize: 12, color: kTextMuted)),
+      ),
     );
   }
 
