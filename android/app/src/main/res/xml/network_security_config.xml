@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Block all cleartext (HTTP) traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Pin certificates for easistent.com -->
+    <domain-config>
+        <domain includeSubdomains="true">easistent.com</domain>
+        <pin-set expiration="2027-01-01">
+            <!-- Sectigo Public Server Authentication CA EV R36 (intermediate) -->
+            <pin digest="SHA-256">0RfXDfccNqREsDzRXraedr+pPfaWA8fMplHCU30xYlo=</pin>
+            <!-- Sectigo Public Server Authentication Root R46 (root) -->
+            <pin digest="SHA-256">Douxi77vs4G+Ib/BogbTFymEYq0QSFXwSgVCaZcI09Q=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>
