@@ -1,11 +1,9 @@
-import '../models/meal_option.dart';
-
 // ── Food‑group keyword rules ──
-
-/// Each keyword maps to a food group and a raw weight.
-///   positive  → +1
-///   neutral   →  0
-///   negative  → −1
+//
+// Each keyword maps to a food group and a raw weight.
+//   positive  → +1
+//   neutral   →  0
+//   negative  → −1
 
 enum _FoodGroup {
   vegetable,
@@ -198,14 +196,6 @@ HealthScore scoreMeal(String description) {
   final score = (normalized * 9 + 1).round().clamp(1, 10);
 
   return HealthScore._(score);
-}
-
-/// Score every option for a single day.
-Map<String, int> scoreDayOptions(List<MealOption> options) {
-  return {
-    for (final opt in options)
-      opt.menuId: scoreMeal(opt.description).score,
-  };
 }
 
 // ── Weekly variety penalty ──

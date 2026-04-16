@@ -8,6 +8,7 @@ import '../services/credentials_store.dart';
 import '../services/easistent_client.dart';
 import '../services/meal_predictor.dart';
 import '../services/meal_structure_store.dart';
+import '../services/pending_revert_store.dart';
 import '../services/preference_learner.dart';
 import '../services/preferences_store.dart';
 import '../services/rating_store.dart';
@@ -285,29 +286,68 @@ class MenuScreenState extends State<MenuScreen> {
 
   // ── Lock probing ──
 
+  /// Max attempts (including the first) to revert a probe selection before
+  /// we persist it as a pending revert for a later session to clean up.
+  static const _revertAttempts = 3;
+  static const _revertBackoff = [
+    Duration(milliseconds: 200),
+    Duration(milliseconds: 500),
+  ];
+
   Future<void> _probeLockedDays() async {
     if (_client == null || _menu.isEmpty) return;
+    // Server-idle guard: never probe while the user is submitting — their
+    // in-flight selects/cancels would race with ours.
+    if (_isSubmitting) return;
 
     final gen = ++_probeGeneration;
     _partiallyLockedDates.clear();
     setState(() => _isProbing = true);
 
+    // Recover any orphaned probe selections from previous runs (app killed
+    // mid-probe, network drop between select and revert, etc.) before we
+    // start a new probe round.
+    await _flushPendingReverts(gen);
+    if (gen != _probeGeneration) {
+      if (mounted) setState(() => _isProbing = false);
+      return;
+    }
+
     final sortedDates = _menu.keys.toList()..sort();
 
     for (final date in sortedDates) {
       if (gen != _probeGeneration) break;
+      if (_isSubmitting) break;
 
       final options = _menu[date]!;
       if (options.length < 2) continue;
 
       final orderedOpt =
           options.where((o) => o.status == 'ordered').firstOrNull;
+      final orderedId = orderedOpt?.menuId;
+      final userSelectedId = _selections[date];
 
+      // Prefer a probe candidate from menus 2-8 (index 1+) that is neither
+      // the server-ordered option (probing with it would be a no-op) nor
+      // the user's tentative in-memory selection (don't overwrite their
+      // pick, and probing with it may also be a no-op server-side).
       MealOption? probeOpt;
-      for (var i = options.length - 1; i >= 0; i--) {
-        if (options[i].menuId != orderedOpt?.menuId) {
-          probeOpt = options[i];
-          break;
+      for (var i = 1; i < options.length; i++) {
+        final c = options[i];
+        if (c.menuId == orderedId) continue;
+        if (c.menuId == userSelectedId) continue;
+        probeOpt = c;
+        break;
+      }
+      // Fallback: any option different from the ordered one (original
+      // behavior). Still skips the no-op case when user's pick equals
+      // the ordered one.
+      if (probeOpt == null) {
+        for (var i = options.length - 1; i >= 0; i--) {
+          if (options[i].menuId != orderedId) {
+            probeOpt = options[i];
+            break;
+          }
         }
       }
       if (probeOpt == null) continue;
@@ -320,40 +360,36 @@ class MenuScreenState extends State<MenuScreen> {
           mealType: probeOpt.mealType,
         );
 
+        // Server accepted the change — day is NOT locked. Revert with
+        // retries; if all attempts fail, persist so we can recover on
+        // the next probe run.
         await Future.delayed(const Duration(milliseconds: 300));
+        if (gen != _probeGeneration) return;
 
-        if (orderedOpt != null) {
-          try {
-            await _client!.selectMeal(
-              date: date,
-              menuId: orderedOpt.menuId,
-              locationId: orderedOpt.locationId,
-              mealType: orderedOpt.mealType,
-            );
-          } catch (_) {
-            if (mounted && gen == _probeGeneration) {
-              showCenteredToast(context,
-                  'Napaka: ni uspelo povrniti $date na ${orderedOpt.menuName}',
-                  color: kAccentRed);
-            }
-          }
-        } else {
-          try {
-            await _client!.cancelMeal(
-              date: date,
-              menuId: probeOpt.menuId,
-              locationId: probeOpt.locationId,
-              mealType: probeOpt.mealType,
-            );
-          } catch (_) {
-            if (mounted && gen == _probeGeneration) {
-              showCenteredToast(context,
-                  'Napaka: ni uspelo preklicati preizkusa za $date',
-                  color: kAccentRed);
-            }
+        final reverted = await _revertProbeWithRetry(
+          date: date,
+          probeOpt: probeOpt,
+          orderedOpt: orderedOpt,
+        );
+
+        if (!reverted) {
+          await PendingRevertStore.add({
+            'date': date,
+            'probeMenuId': probeOpt.menuId,
+            'revertToMenuId': orderedId,
+            'locationId': orderedOpt?.locationId ?? probeOpt.locationId,
+            'mealType': orderedOpt?.mealType ?? probeOpt.mealType,
+            'recordedAt': DateTime.now().toIso8601String(),
+          });
+          if (mounted && gen == _probeGeneration) {
+            final target = orderedOpt?.menuName ?? 'odjavo';
+            showCenteredToast(context,
+                'Napaka: $date ostal na preizkusu, poskusim znova kasneje (cilj: $target).',
+                color: kAccentRed);
           }
         }
       } catch (_) {
+        // Initial select rejected => day is locked server-side.
         _partiallyLockedDates.add(date);
       }
 
@@ -367,7 +403,85 @@ class MenuScreenState extends State<MenuScreen> {
     }
   }
 
-  Future<void> _onOptionTap(String date, MealOption option) async {
+  /// Attempt to revert a probe selection with exponential backoff. Returns
+  /// true on success, false if every attempt threw. Aborts immediately if
+  /// the caller's generation has been superseded.
+  Future<bool> _revertProbeWithRetry({
+    required String date,
+    required MealOption probeOpt,
+    required MealOption? orderedOpt,
+  }) async {
+    for (var attempt = 0; attempt < _revertAttempts; attempt++) {
+      try {
+        if (orderedOpt != null) {
+          await _client!.selectMeal(
+            date: date,
+            menuId: orderedOpt.menuId,
+            locationId: orderedOpt.locationId,
+            mealType: orderedOpt.mealType,
+          );
+        } else {
+          await _client!.cancelMeal(
+            date: date,
+            menuId: probeOpt.menuId,
+            locationId: probeOpt.locationId,
+            mealType: probeOpt.mealType,
+          );
+        }
+        return true;
+      } catch (_) {
+        if (attempt < _revertBackoff.length) {
+          await Future.delayed(_revertBackoff[attempt]);
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Replay any reverts that failed in a previous session.
+  Future<void> _flushPendingReverts(int gen) async {
+    final pending = await PendingRevertStore.load();
+    if (pending.isEmpty) return;
+
+    final remaining = <Map<String, dynamic>>[];
+    for (final p in pending) {
+      if (gen != _probeGeneration) {
+        remaining.add(p);
+        continue;
+      }
+      final date = p['date'] as String? ?? '';
+      final revertToId = p['revertToMenuId'] as String?;
+      final probeMenuId = p['probeMenuId'] as String? ?? '';
+      final locationId = p['locationId'] as String? ?? '';
+      final mealType = p['mealType'] as String? ?? 'malica';
+      if (date.isEmpty || locationId.isEmpty) continue;
+
+      try {
+        if (revertToId != null && revertToId.isNotEmpty) {
+          await _client!.selectMeal(
+            date: date,
+            menuId: revertToId,
+            locationId: locationId,
+            mealType: mealType,
+          );
+        } else {
+          if (probeMenuId.isEmpty) continue;
+          await _client!.cancelMeal(
+            date: date,
+            menuId: probeMenuId,
+            locationId: locationId,
+            mealType: mealType,
+          );
+        }
+      } catch (_) {
+        // Still failing; keep for next run.
+        remaining.add(p);
+      }
+    }
+    await PendingRevertStore.saveAll(remaining);
+  }
+
+  void _onOptionTap(String date, MealOption option) {
     if (option.status != 'available' && option.status != 'ordered') return;
     if (!_isDaySelectable(date)) return;
     if (_partiallyLockedDates.contains(date)) {
@@ -390,7 +504,7 @@ class MenuScreenState extends State<MenuScreen> {
     setState(() => _selections[date] = option.menuId);
   }
 
-  Future<void> _onCancelTap(String date) async {
+  void _onCancelTap(String date) {
     if (!_isDaySelectable(date)) return;
 
     // Toggle: if already cancelled, revert to ordered option or AI pick
@@ -454,7 +568,7 @@ class MenuScreenState extends State<MenuScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                  'Pozor: na teh dnevih ne mores vec zamenjati nazaj:'),
+                  'Pozor: na teh dnevih ne moreš več zamenjati nazaj:'),
               const SizedBox(height: 8),
               for (final line in lockedLines) Text('• $line'),
             ],
@@ -629,7 +743,7 @@ class MenuScreenState extends State<MenuScreen> {
           color: kAccentRed);
     } else {
       showCenteredToast(context,
-          'Uspesno oddano: $successCount izbir',
+          'Uspešno oddano: $successCount izbir',
           color: kAccentGreen);
     }
 
@@ -835,7 +949,7 @@ class MenuScreenState extends State<MenuScreen> {
         ? 'Odjavljeno: $cancelled, napake: $errors'
         : cancelled > 0
             ? 'Odjavljeno: $cancelled dni'
-            : 'Odsotnost zabelezena za ${dates.length} dni';
+            : 'Odsotnost zabeležena za ${dates.length} dni';
     showCenteredToast(context, msg);
 
     await _fetchMenu(week: _currentWeek);

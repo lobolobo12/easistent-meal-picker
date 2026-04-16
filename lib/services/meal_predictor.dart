@@ -13,6 +13,14 @@ const _wMenuType = 0.3;
 const _wManual = 0.4;
 const _wRating = 0.5;
 
+// ── Odjava (cancel) fallback threshold ──
+//
+// When every available option on a day scores at or below this value AND
+// no option is positive, the predictor recommends Odjava instead of the
+// "least-bad" meal. Tune this to taste — more negative means Odjava is
+// recommended less often; closer to 0 means it fires more readily.
+const kOdjavaScoreThreshold = -0.3;
+
 /// Tokenize a Slovenian food description into lowercase word tokens.
 List<String> tokenize(String description) {
   var text = description.toLowerCase();
@@ -258,4 +266,64 @@ class MealPredictor {
 
     return bestId;
   }
+
+  /// Pick the best option, or recommend Odjava when every available option
+  /// is strongly negative.
+  ///
+  /// Odjava is recommended when:
+  ///   - at least one option was scored (so we're not on an unseen menu), AND
+  ///   - no option has a positive score, AND
+  ///   - the best (maximum) score is at or below [kOdjavaScoreThreshold].
+  ///
+  /// When any of those conditions fail, falls back to [pickBest] behavior.
+  PickResult pickBestOrOdjava(List<MealOption> options) {
+    String? bestId;
+    var bestScore = double.negativeInfinity;
+
+    for (final opt in options) {
+      if (opt.status != 'available') continue;
+      final score = scoreOption(opt.menuName, opt.description);
+      if (score > bestScore) {
+        bestScore = score;
+        bestId = opt.menuId;
+      }
+    }
+
+    if (bestId == null) return const PickResult.none();
+
+    // All-negative check: the best score is not positive. Combined with the
+    // threshold check, this avoids triggering Odjava when scores are only
+    // mildly negative (e.g. a cold baseline with no strong signal).
+    if (bestScore <= 0 && bestScore <= kOdjavaScoreThreshold) {
+      return PickResult.odjava(bestScore: bestScore);
+    }
+
+    return PickResult.menu(bestId, score: bestScore);
+  }
+}
+
+/// Outcome of [MealPredictor.pickBestOrOdjava].
+class PickResult {
+  /// Picked menu id, null when [recommendOdjava] or when no option was
+  /// scoreable.
+  final String? menuId;
+
+  /// True when every available option scored strongly negative and the
+  /// caller should submit Odjava instead of any menu.
+  final bool recommendOdjava;
+
+  /// Highest raw score observed (even when Odjava is recommended).
+  final double? bestScore;
+
+  const PickResult._({
+    this.menuId,
+    this.recommendOdjava = false,
+    this.bestScore,
+  });
+
+  const PickResult.none() : this._();
+  const PickResult.menu(String id, {required double score})
+      : this._(menuId: id, bestScore: score);
+  const PickResult.odjava({required double bestScore})
+      : this._(recommendOdjava: true, bestScore: bestScore);
 }

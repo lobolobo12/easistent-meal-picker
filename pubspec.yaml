@@ -31,7 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  http: ^1.2.0
   html: ^0.15.0
   path_provider: ^2.1.0
   android_alarm_manager_plus: ^4.0.0

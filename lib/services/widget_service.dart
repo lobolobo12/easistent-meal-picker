@@ -1,11 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:home_widget/home_widget.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../models/meal_option.dart';
-import 'easistent_client.dart';
 import 'meal_predictor.dart';
 
 const _androidWidgetName = 'MealWidgetProvider';
@@ -80,61 +75,6 @@ Future<void> updateHomeWidget({
   }
 
   return ('', '');
-}
-
-/// Update widget from background (e.g. after auto-submit).
-/// Reads credentials, training data, preferences from disk, logs in,
-/// fetches menu, and updates the widget.
-Future<void> updateHomeWidgetBackground() async {
-  try {
-    final dir = await getApplicationDocumentsDirectory();
-
-    final credsFile = File('${dir.path}/credentials.json');
-    if (!credsFile.existsSync()) return;
-    final credsData =
-        jsonDecode(await credsFile.readAsString()) as Map<String, dynamic>;
-    final username = credsData['username'] as String?;
-    final password = credsData['password'] as String?;
-    if (username == null || password == null) return;
-
-    final trainingFile = File('${dir.path}/training_data.json');
-    final prefsFile = File('${dir.path}/preferences.json');
-    final ratingsFile = File('${dir.path}/meal_ratings.json');
-
-    List<dynamic> trainingData = [];
-    Map<String, dynamic> preferences = {};
-    List<dynamic> ratings = [];
-
-    if (trainingFile.existsSync()) {
-      trainingData =
-          jsonDecode(await trainingFile.readAsString()) as List<dynamic>;
-    }
-    if (prefsFile.existsSync()) {
-      preferences =
-          jsonDecode(await prefsFile.readAsString()) as Map<String, dynamic>;
-    }
-    if (ratingsFile.existsSync()) {
-      try {
-        ratings =
-            jsonDecode(await ratingsFile.readAsString()) as List<dynamic>;
-      } catch (_) {}
-    }
-
-    final predictor = MealPredictor.fromData(
-      trainingData: trainingData,
-      preferences: preferences,
-      ratings: ratings,
-    );
-
-    final client = EAsistentClient(username: username, password: password);
-    await client.login();
-    final html = await client.getMealPage();
-    final menu = client.parseMealTable(html);
-
-    await updateHomeWidget(menu: menu, predictor: predictor);
-  } catch (_) {
-    // Non-fatal — widget just won't update
-  }
 }
 
 /// Strip allergen parentheticals from a meal description.

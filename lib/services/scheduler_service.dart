@@ -11,6 +11,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../models/meal_option.dart';
 import 'easistent_client.dart';
 import 'meal_predictor.dart';
+import 'scheduler_debug_log.dart';
 import 'widget_service.dart';
 
 const _autoSubmitAlarmId = 42;
@@ -32,90 +33,127 @@ void Function(String? payload)? onNotificationTap;
 /// Top-level callback for auto-submit alarm.
 @pragma('vm:entry-point')
 Future<void> _autoSubmitCallback() async {
+  await SchedulerDebugLog.log('alarm', 'auto-submit callback fired');
   await _handleAutoSubmit();
 }
 
 /// Top-level callback for daily menu-availability check.
 @pragma('vm:entry-point')
 Future<void> _menuCheckCallback() async {
+  await SchedulerDebugLog.log('alarm', 'menu-check callback fired');
   await _handleMenuCheck();
 }
 
 /// Top-level callback for daily 13:00 meal rating reminder.
 @pragma('vm:entry-point')
 Future<void> _ratingReminderCallback() async {
+  await SchedulerDebugLog.log('alarm', 'rating-reminder callback fired');
   await _handleRatingReminder();
+}
+
+/// Per-isolate init guard for `_notificationsPlugin`. Background isolates
+/// have their own copy of this variable; main isolate has its own.
+bool _pluginInitialized = false;
+const _androidInitSettings =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
+const _androidChannel = AndroidNotificationChannel(
+  _channelId,
+  _channelName,
+  description: 'Weekly meal reminders and auto-submit results',
+  importance: Importance.high,
+);
+const _androidNotifDetails = AndroidNotificationDetails(
+  _channelId,
+  _channelName,
+  channelDescription: 'Weekly meal reminders and auto-submit results',
+  importance: Importance.high,
+  priority: Priority.high,
+);
+const _notifDetails = NotificationDetails(android: _androidNotifDetails);
+
+/// Ensure the plugin + channel are initialized in the current isolate.
+/// Safe to call from main or background isolates, any number of times.
+Future<FlutterLocalNotificationsPlugin> _ensurePlugin() async {
+  if (_pluginInitialized) return _notificationsPlugin;
+  try {
+    if (Platform.isAndroid) {
+      final android = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await android?.createNotificationChannel(_androidChannel);
+    }
+    await _notificationsPlugin.initialize(
+      const InitializationSettings(android: _androidInitSettings),
+      onDidReceiveNotificationResponse: (response) {
+        onNotificationTap?.call(response.payload);
+      },
+    );
+    _pluginInitialized = true;
+  } catch (e) {
+    await SchedulerDebugLog.log('notif', 'ensurePlugin failed: $e');
+  }
+  return _notificationsPlugin;
 }
 
 /// Initialize timezone, notifications plugin, and alarm manager.
 Future<void> initScheduler() async {
+  await SchedulerDebugLog.log('init', 'initScheduler start');
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Europe/Ljubljana'));
 
-  // Notification init is non-fatal — the app works without it.
   try {
-    if (Platform.isAndroid) {
-      final androidPlugin = _notificationsPlugin
+    await _ensurePlugin();
+  } catch (e) {
+    // Fallback: if init throws, try cancelAll + re-init once (handles
+    // corrupted notification storage on some OEMs).
+    await SchedulerDebugLog.log('init', 'ensurePlugin threw: $e — retry');
+    try {
+      final android = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
-      if (androidPlugin != null) {
-        await androidPlugin.createNotificationChannel(
-          const AndroidNotificationChannel(
-            _channelId,
-            _channelName,
-            description: 'Weekly meal reminders and auto-submit results',
-            importance: Importance.high,
-          ),
-        );
-      }
-    }
-
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
-
-    void handleNotifResponse(NotificationResponse response) {
-      onNotificationTap?.call(response.payload);
-    }
-
-    try {
-      await _notificationsPlugin.initialize(
-        initSettings,
-        onDidReceiveNotificationResponse: handleNotifResponse,
-      );
-    } catch (_) {
-      // Corrupted stored notification data — clear and retry
-      try {
-        final androidPlugin = _notificationsPlugin
-            .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>();
-        await androidPlugin?.cancelAll();
-      } catch (_) {}
-      try {
-        await _notificationsPlugin.initialize(
-          initSettings,
-          onDidReceiveNotificationResponse: handleNotifResponse,
-        );
-      } catch (_) {}
-    }
-  } catch (_) {
-    // Entire notification setup failed — proceed without notifications
+      await android?.cancelAll();
+    } catch (_) {}
+    _pluginInitialized = false;
+    await _ensurePlugin();
   }
 
   try {
     await AndroidAlarmManager.initialize();
-  } catch (_) {
-    // Alarm manager init failed — proceed without background scheduling
+    await SchedulerDebugLog.log('init', 'AndroidAlarmManager.initialize OK');
+  } catch (e) {
+    await SchedulerDebugLog.log(
+        'init', 'AndroidAlarmManager.initialize failed: $e');
   }
 }
 
-/// Request POST_NOTIFICATIONS permission on Android 13+.
-Future<void> requestNotificationPermission() async {
+/// Request POST_NOTIFICATIONS (Android 13+) AND SCHEDULE_EXACT_ALARM
+/// (Android 12+, needed for `AndroidAlarmManager.periodic(exact: true)`).
+///
+/// The exact-alarm permission is NOT granted automatically on Android 12+
+/// for general apps. If it's denied, `AndroidAlarmManager.periodic` calls
+/// will silently fail to fire — which is the most common reason
+/// notifications never arrive on recent Android. Returns a record flagging
+/// whether either permission is still missing after the request.
+Future<({bool notificationsGranted, bool exactAlarmGranted})>
+    requestNotificationPermission() async {
+  var notif = true;
+  var exact = true;
   try {
     if (Platform.isAndroid) {
-      await Permission.notification.request();
+      final n = await Permission.notification.request();
+      notif = n.isGranted;
+      await SchedulerDebugLog.log('perm', 'notifications: $n');
+
+      // scheduleExactAlarm only exists on Android 12+. On older APIs the
+      // permission_handler maps it to granted automatically.
+      final e = await Permission.scheduleExactAlarm.request();
+      exact = e.isGranted;
+      await SchedulerDebugLog.log('perm', 'scheduleExactAlarm: $e');
     }
-  } catch (_) {}
+  } catch (e) {
+    await SchedulerDebugLog.log('perm', 'request threw: $e');
+  }
+  return (notificationsGranted: notif, exactAlarmGranted: exact);
 }
 
 /// Schedule the Monday 16:00 reminder notification and the Monday 18:00
@@ -124,19 +162,11 @@ Future<void> scheduleWeeklyTasks() async {
   try {
     // Cancel any existing to avoid duplicates
     await cancelScheduledTasks();
+    await _ensurePlugin();
 
     // 1. Monday 16:00 reminder via flutter_local_notifications (repeats weekly)
     final now = tz.TZDateTime.now(tz.local);
     var nextMonday16 = _nextWeekday(now, DateTime.monday, 16, 0);
-
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Weekly meal reminders and auto-submit results',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const notifDetails = NotificationDetails(android: androidDetails);
 
     try {
       await _notificationsPlugin.zonedSchedule(
@@ -144,13 +174,18 @@ Future<void> scheduleWeeklyTasks() async {
         'Meni za naslednji teden',
         'Preveri izbire do 18:00',
         nextMonday16,
-        notifDetails,
+        _notifDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
-    } catch (_) {}
+      await SchedulerDebugLog.log('schedule',
+          'weekly reminder scheduled for $nextMonday16');
+    } catch (e) {
+      await SchedulerDebugLog.log(
+          'schedule', 'zonedSchedule failed: $e');
+    }
 
     // 2. Monday 18:00 auto-submit via periodic alarm (every ~7 days).
     final nextMonday18 = _nextWeekday(now, DateTime.monday, 18, 0);
@@ -163,7 +198,7 @@ Future<void> scheduleWeeklyTasks() async {
     );
 
     try {
-      await AndroidAlarmManager.periodic(
+      final ok = await AndroidAlarmManager.periodic(
         const Duration(days: 7),
         _autoSubmitAlarmId,
         _autoSubmitCallback,
@@ -172,7 +207,12 @@ Future<void> scheduleWeeklyTasks() async {
         wakeup: true,
         rescheduleOnReboot: true,
       );
-    } catch (_) {}
+      await SchedulerDebugLog.log(
+          'schedule', 'auto-submit alarm scheduled for $startTime (ok=$ok)');
+    } catch (e) {
+      await SchedulerDebugLog.log(
+          'schedule', 'auto-submit alarm register failed: $e');
+    }
 
     // 3. Daily 12:00 menu-availability check.
     final tomorrow12 = _nextTime(now, 12, 0);
@@ -185,7 +225,7 @@ Future<void> scheduleWeeklyTasks() async {
     );
 
     try {
-      await AndroidAlarmManager.periodic(
+      final ok = await AndroidAlarmManager.periodic(
         const Duration(days: 1),
         _menuCheckAlarmId,
         _menuCheckCallback,
@@ -194,7 +234,12 @@ Future<void> scheduleWeeklyTasks() async {
         wakeup: true,
         rescheduleOnReboot: true,
       );
-    } catch (_) {}
+      await SchedulerDebugLog.log(
+          'schedule', 'menu-check alarm scheduled for $menuCheckStart (ok=$ok)');
+    } catch (e) {
+      await SchedulerDebugLog.log(
+          'schedule', 'menu-check alarm register failed: $e');
+    }
 
     // 4. Daily 13:00 meal rating reminder.
     final next13 = _nextTime(now, 13, 0);
@@ -207,7 +252,7 @@ Future<void> scheduleWeeklyTasks() async {
     );
 
     try {
-      await AndroidAlarmManager.periodic(
+      final ok = await AndroidAlarmManager.periodic(
         const Duration(days: 1),
         _ratingAlarmId,
         _ratingReminderCallback,
@@ -216,7 +261,12 @@ Future<void> scheduleWeeklyTasks() async {
         wakeup: true,
         rescheduleOnReboot: true,
       );
-    } catch (_) {}
+      await SchedulerDebugLog.log(
+          'schedule', 'rating alarm scheduled for $ratingStart (ok=$ok)');
+    } catch (e) {
+      await SchedulerDebugLog.log(
+          'schedule', 'rating alarm register failed: $e');
+    }
 
     // If it's a weekday and past 13:00, the periodic alarm's startAt is
     // tomorrow so today's check was missed. Fire it immediately.
@@ -261,7 +311,11 @@ Future<void> cancelScheduledTasks() async {
 /// 7. Submit picks, log results, write marker, show notification
 Future<void> _handleAutoSubmit() async {
   try {
-    final now = DateTime.now();
+    // Evaluate the weekday/hour gate in Europe/Ljubljana, not device-local
+    // time. Device locale may differ from the scheduled tz, which would
+    // silently reject a correctly scheduled fire for travelers.
+    tz.initializeTimeZones();
+    final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
 
     // Safety check: only act on Mondays between 17:30 and 20:00
     if (now.weekday != DateTime.monday || now.hour < 17 || now.hour >= 20) {
@@ -362,8 +416,9 @@ Future<void> _handleAutoSubmit() async {
       } catch (_) {}
     }
 
-    // Filter to days that need auto-submit
-    final daysToSubmit = <String, MealOption>{};
+    // Filter to days that need auto-submit. Value is a meal option to
+    // select, OR null to request Odjava (cancel whatever is ordered).
+    final daysToSubmit = <String, MealOption?>{};
     for (final entry in menu.entries) {
       final date = entry.key;
       final options = entry.value;
@@ -381,7 +436,18 @@ Future<void> _handleAutoSubmit() async {
         continue;
       }
 
-      final bestId = predictor.pickBest(options);
+      final result = predictor.pickBestOrOdjava(options);
+      if (result.recommendOdjava) {
+        // Every option scored strongly negative — recommend Odjava for
+        // this day only if the server knows an ordered meal to cancel.
+        final ordered =
+            options.where((o) => o.status == 'ordered').firstOrNull;
+        if (ordered != null) {
+          daysToSubmit[date] = null; // null ⇒ cancel
+        }
+        continue;
+      }
+      final bestId = result.menuId;
       if (bestId == null) continue;
       daysToSubmit[date] = options.firstWhere((o) => o.menuId == bestId);
     }
@@ -389,7 +455,7 @@ Future<void> _handleAutoSubmit() async {
     // If nothing left to submit, notify and bail
     if (daysToSubmit.isEmpty) {
       await markerFile.writeAsString(mondayStr);
-      await _showResultNotification('Auto-submit', 'Ze oddano - preskocim.');
+      await _showResultNotification('Auto-submit', 'Že oddano — preskočim.');
       return;
     }
 
@@ -402,21 +468,43 @@ Future<void> _handleAutoSubmit() async {
       final bestOpt = entry.value;
 
       try {
-        await client.selectMeal(
-          date: date,
-          menuId: bestOpt.menuId,
-          locationId: bestOpt.locationId,
-          mealType: bestOpt.mealType,
-        );
-        submitted++;
-
-        logData.add({
-          'date': date,
-          'menuName': bestOpt.menuName,
-          'description': bestOpt.description,
-          'submittedAt': DateTime.now().toIso8601String(),
-          'auto': true,
-        });
+        if (bestOpt == null) {
+          // Odjava recommendation — cancel whatever is ordered.
+          final ordered = menu[date]!
+              .where((o) => o.status == 'ordered')
+              .firstOrNull;
+          if (ordered == null) continue;
+          await client.cancelMeal(
+            date: date,
+            menuId: ordered.menuId,
+            locationId: ordered.locationId,
+            mealType: ordered.mealType,
+          );
+          submitted++;
+          logData.add({
+            'date': date,
+            'menuName': 'Odjava',
+            'menuId': '__odjava__',
+            'description': 'AI odjava od ${ordered.menuName}',
+            'submittedAt': DateTime.now().toIso8601String(),
+            'auto': true,
+          });
+        } else {
+          await client.selectMeal(
+            date: date,
+            menuId: bestOpt.menuId,
+            locationId: bestOpt.locationId,
+            mealType: bestOpt.mealType,
+          );
+          submitted++;
+          logData.add({
+            'date': date,
+            'menuName': bestOpt.menuName,
+            'description': bestOpt.description,
+            'submittedAt': DateTime.now().toIso8601String(),
+            'auto': true,
+          });
+        }
         await logFile.writeAsString(jsonEncode(logData));
       } catch (_) {
         errors++;
@@ -450,8 +538,10 @@ Future<void> _handleMenuCheck() async {
   try {
     final dir = await getApplicationDocumentsDirectory();
 
-    // Weekly marker keyed by next week's Monday to avoid repeat notifications
-    final nextMon = _nextWeekMondayStr(DateTime.now());
+    // Weekly marker keyed by next week's Monday in Europe/Ljubljana.
+    tz.initializeTimeZones();
+    final nowTz = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
+    final nextMon = _nextWeekMondayStr(nowTz);
     final markerFile = File('${dir.path}/menu_available_marker.txt');
     if (markerFile.existsSync()) {
       final marker = await markerFile.readAsString();
@@ -509,7 +599,8 @@ Future<void> _handleMenuCheck() async {
 /// in the log but no rating yet.
 Future<void> _handleRatingReminder() async {
   try {
-    final now = DateTime.now();
+    tz.initializeTimeZones();
+    final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
 
     // Only on weekdays (Mon-Fri)
     if (now.weekday > DateTime.friday) return;
@@ -548,50 +639,31 @@ Future<void> _handleRatingReminder() async {
 
     // Show rating prompt notification with payload so the app opens the
     // rating dialog when tapped.
-    final plugin = FlutterLocalNotificationsPlugin();
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidSettings);
-    await plugin.initialize(initSettings);
-
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'Weekly meal reminders and auto-submit results',
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-    const notifDetails = NotificationDetails(android: androidDetails);
+    final plugin = await _ensurePlugin();
     await plugin.show(
       _ratingNotifId,
       'Kako ti je bila danes malica?',
       'Oceni z 1-5 zvezdicami',
-      notifDetails,
+      _notifDetails,
       payload: 'rate_meal',
     );
-  } catch (_) {
-    // Non-fatal
+    await SchedulerDebugLog.log('notif', 'rating reminder shown');
+  } catch (e) {
+    await SchedulerDebugLog.log('notif', 'rating reminder failed: $e');
   }
 }
 
 /// Show a notification from the background isolate.
 Future<void> _showResultNotification(String title, String body,
     {int? notifId}) async {
-  final plugin = FlutterLocalNotificationsPlugin();
-  const androidSettings =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  const initSettings = InitializationSettings(android: androidSettings);
-  await plugin.initialize(initSettings);
-
-  const androidDetails = AndroidNotificationDetails(
-    _channelId,
-    _channelName,
-    channelDescription: 'Weekly meal reminders and auto-submit results',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
-  const notifDetails = NotificationDetails(android: androidDetails);
-  await plugin.show(notifId ?? _resultNotifId, title, body, notifDetails);
+  try {
+    final plugin = await _ensurePlugin();
+    await plugin.show(notifId ?? _resultNotifId, title, body, _notifDetails);
+    await SchedulerDebugLog.log(
+        'notif', 'shown id=${notifId ?? _resultNotifId} title=$title');
+  } catch (e) {
+    await SchedulerDebugLog.log('notif', 'show failed: $e');
+  }
 }
 
 /// Get TZDateTime for the next occurrence of [weekday] at [hour]:[minute].
