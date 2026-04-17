@@ -164,8 +164,16 @@ Future<void> scheduleWeeklyTasks() async {
     await cancelScheduledTasks();
     await _ensurePlugin();
 
+    // Always pin to Europe/Ljubljana explicitly. `tz.local` is set in
+    // initScheduler(), but if that ever partially fails or gets reset
+    // (observed: log line rendered with 'Z' UTC suffix on some runs),
+    // the weekly reminder would be scheduled in the wrong timezone.
+    // Using an explicit location also makes _nextWeekday / _nextTime
+    // derive their location from `now.location` — no tz.local reliance.
+    final ljubljana = tz.getLocation('Europe/Ljubljana');
+
     // 1. Monday 16:00 reminder via flutter_local_notifications (repeats weekly)
-    final now = tz.TZDateTime.now(tz.local);
+    final now = tz.TZDateTime.now(ljubljana);
     var nextMonday16 = _nextWeekday(now, DateTime.monday, 16, 0);
 
     try {
@@ -272,7 +280,7 @@ Future<void> scheduleWeeklyTasks() async {
     // tomorrow so today's check was missed. Fire it immediately.
     if (now.weekday <= DateTime.friday) {
       final today13 =
-          tz.TZDateTime(tz.local, now.year, now.month, now.day, 13, 0);
+          tz.TZDateTime(ljubljana, now.year, now.month, now.day, 13, 0);
       if (now.isAfter(today13)) {
         _handleRatingReminder(); // fire-and-forget for today
       }
@@ -319,6 +327,8 @@ Future<void> _handleAutoSubmit() async {
 
     // Safety check: only act on Mondays between 17:30 and 20:00
     if (now.weekday != DateTime.monday || now.hour < 17 || now.hour >= 20) {
+      await SchedulerDebugLog.log('auto-submit',
+          'gate-reject: weekday=${now.weekday} hour=${now.hour} (need Mon 17-19)');
       return;
     }
 
@@ -329,18 +339,31 @@ Future<void> _handleAutoSubmit() async {
 
     if (markerFile.existsSync()) {
       final marker = await markerFile.readAsString();
-      if (marker.trim() == mondayStr) return; // Already submitted this week
+      if (marker.trim() == mondayStr) {
+        await SchedulerDebugLog.log(
+            'auto-submit', 'marker-match: already submitted for $mondayStr');
+        return;
+      }
     }
 
     // Load credentials from disk (background isolate, no CredentialsStore cache)
     final credsFile = File('${dir.path}/credentials.json');
-    if (!credsFile.existsSync()) return;
+    if (!credsFile.existsSync()) {
+      await SchedulerDebugLog.log('auto-submit',
+          'bail: credentials.json missing — user not logged in');
+      return;
+    }
 
     final credsData =
         jsonDecode(await credsFile.readAsString()) as Map<String, dynamic>;
     final username = credsData['username'] as String?;
     final password = credsData['password'] as String?;
-    if (username == null || password == null) return;
+    if (username == null || password == null) {
+      await SchedulerDebugLog.log(
+          'auto-submit', 'bail: credentials.json has null username or password');
+      return;
+    }
+    await SchedulerDebugLog.log('auto-submit', 'proceeding — credentials OK');
 
     // Load training data, preferences, and ratings from disk
     final trainingFile = File('${dir.path}/training_data.json');
@@ -545,17 +568,29 @@ Future<void> _handleMenuCheck() async {
     final markerFile = File('${dir.path}/menu_available_marker.txt');
     if (markerFile.existsSync()) {
       final marker = await markerFile.readAsString();
-      if (marker.trim() == nextMon) return; // Already notified for this week
+      if (marker.trim() == nextMon) {
+        await SchedulerDebugLog.log(
+            'menu-check', 'marker-match: already notified for $nextMon');
+        return;
+      }
     }
 
     // Load credentials
     final credsFile = File('${dir.path}/credentials.json');
-    if (!credsFile.existsSync()) return;
+    if (!credsFile.existsSync()) {
+      await SchedulerDebugLog.log(
+          'menu-check', 'bail: credentials.json missing');
+      return;
+    }
     final credsData =
         jsonDecode(await credsFile.readAsString()) as Map<String, dynamic>;
     final username = credsData['username'] as String?;
     final password = credsData['password'] as String?;
-    if (username == null || password == null) return;
+    if (username == null || password == null) {
+      await SchedulerDebugLog.log(
+          'menu-check', 'bail: credentials.json has null fields');
+      return;
+    }
 
     // Login and fetch next week's menu
     final client = EAsistentClient(username: username, password: password);
@@ -563,10 +598,18 @@ Future<void> _handleMenuCheck() async {
 
     final html = await client.getMealPage();
     final currentWeek = client.findCurrentWeek(html);
-    if (currentWeek == null) return;
+    if (currentWeek == null) {
+      await SchedulerDebugLog.log(
+          'menu-check', 'bail: findCurrentWeek returned null');
+      return;
+    }
 
     final menu = await client.getWeeklyMenu(week: currentWeek + 1);
-    if (menu.isEmpty) return;
+    if (menu.isEmpty) {
+      await SchedulerDebugLog.log('menu-check',
+          'bail: next-week menu empty (week ${currentWeek + 1})');
+      return;
+    }
 
     // Check if any day has real (non-empty) descriptions
     var hasDescriptions = false;
@@ -580,7 +623,11 @@ Future<void> _handleMenuCheck() async {
       if (hasDescriptions) break;
     }
 
-    if (!hasDescriptions) return; // Not populated yet
+    if (!hasDescriptions) {
+      await SchedulerDebugLog.log(
+          'menu-check', 'menu not yet populated — will retry tomorrow');
+      return;
+    }
 
     // Descriptions are live — write marker and notify
     await markerFile.writeAsString(nextMon);
@@ -589,8 +636,10 @@ Future<void> _handleMenuCheck() async {
       'Jedilnik za naslednji teden je na voljo -- preveri izbire!',
       notifId: _menuAvailableNotifId,
     );
-  } catch (_) {
-    // Non-fatal — will retry tomorrow
+    await SchedulerDebugLog.log(
+        'menu-check', 'notified: menu ready for $nextMon');
+  } catch (e) {
+    await SchedulerDebugLog.log('menu-check', 'caught: $e');
   }
 }
 
@@ -603,18 +652,27 @@ Future<void> _handleRatingReminder() async {
     final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
 
     // Only on weekdays (Mon-Fri)
-    if (now.weekday > DateTime.friday) return;
+    if (now.weekday > DateTime.friday) {
+      await SchedulerDebugLog.log(
+          'rating', 'skip: weekend (weekday=${now.weekday})');
+      return;
+    }
 
     final dir = await getApplicationDocumentsDirectory();
     final todayStr = _fmtDate(now);
 
     // Check if there's a real meal submission for today (skip Odjava/absence)
     final logFile = File('${dir.path}/submission_log.json');
-    if (!logFile.existsSync()) return;
+    if (!logFile.existsSync()) {
+      await SchedulerDebugLog.log(
+          'rating', 'skip: no submission log exists yet');
+      return;
+    }
     List<dynamic> logData;
     try {
       logData = jsonDecode(await logFile.readAsString()) as List<dynamic>;
-    } catch (_) {
+    } catch (e) {
+      await SchedulerDebugLog.log('rating', 'skip: submission log parse failed: $e');
       return;
     }
     final hasRealSubmission = logData.any((e) =>
@@ -622,7 +680,11 @@ Future<void> _handleRatingReminder() async {
         e['date'] == todayStr &&
         e['menuId'] != '__odjava__' &&
         e['menuId'] != '__odsoten__');
-    if (!hasRealSubmission) return;
+    if (!hasRealSubmission) {
+      await SchedulerDebugLog.log(
+          'rating', 'skip: no real submission for $todayStr');
+      return;
+    }
 
     // Check if already rated today
     final ratingsFile = File('${dir.path}/meal_ratings.json');
@@ -632,7 +694,9 @@ Future<void> _handleRatingReminder() async {
             jsonDecode(await ratingsFile.readAsString()) as List<dynamic>;
         if (ratings.any((r) =>
             r is Map<String, dynamic> && r['date'] == todayStr)) {
-          return; // Already rated
+          await SchedulerDebugLog.log(
+              'rating', 'skip: already rated $todayStr');
+          return;
         }
       } catch (_) {}
     }
@@ -667,10 +731,12 @@ Future<void> _showResultNotification(String title, String body,
 }
 
 /// Get TZDateTime for the next occurrence of [weekday] at [hour]:[minute].
+/// Uses `from.location` so the result inherits the caller's timezone —
+/// does NOT touch `tz.local`, which may or may not be set correctly.
 tz.TZDateTime _nextWeekday(
     tz.TZDateTime from, int weekday, int hour, int minute) {
   var date = tz.TZDateTime(
-      tz.local, from.year, from.month, from.day, hour, minute);
+      from.location, from.year, from.month, from.day, hour, minute);
   // Move forward to the target weekday
   while (date.weekday != weekday) {
     date = date.add(const Duration(days: 1));
@@ -683,9 +749,10 @@ tz.TZDateTime _nextWeekday(
 }
 
 /// Get next occurrence of [hour]:[minute] (today if not yet passed, else tomorrow).
+/// Inherits location from [from] — does NOT use `tz.local`.
 tz.TZDateTime _nextTime(tz.TZDateTime from, int hour, int minute) {
-  var date =
-      tz.TZDateTime(tz.local, from.year, from.month, from.day, hour, minute);
+  var date = tz.TZDateTime(
+      from.location, from.year, from.month, from.day, hour, minute);
   if (date.isBefore(from)) date = date.add(const Duration(days: 1));
   return date;
 }

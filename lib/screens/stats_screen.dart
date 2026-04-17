@@ -172,7 +172,10 @@ class _StatsScreenState extends State<StatsScreen> {
 
     for (final entry in log) {
       final menuName = entry['menuName'] as String? ?? '';
-      if (menuName == 'Odjava') continue;
+      // Exclude both Odjava (user-cancelled) and Odsoten (absent) — neither
+      // is a real menu pick, so they shouldn't pollute menu-type totals,
+      // AI accuracy, or monthly counts.
+      if (menuName == 'Odjava' || menuName == 'Odsoten') continue;
 
       _totalSubmissions++;
       _menuTypeCounts[menuName] = (_menuTypeCounts[menuName] ?? 0) + 1;
@@ -288,18 +291,18 @@ class _StatsScreenState extends State<StatsScreen> {
 
       if (negativeTotal > totalPositive * 0.4) {
         _healthSuggestion =
-            'Priporocilo: zmanjsaj ocvrte in predelane jedi ta teden.';
+            'Priporočilo: zmanjšaj ocvrte in predelane jedi ta teden.';
       } else if (weakest != null) {
         final label = foodGroupLabels[weakest]?.toLowerCase() ?? weakest;
         final suggestion = {
-          'vegetable': 'Priporocilo: izberi vec zelenjave ta teden.',
-          'protein': 'Priporocilo: dodaj vec beljakovinskih jedi ta teden.',
-          'wholeGrain': 'Priporocilo: poskusi polnozrnate opcije ta teden.',
-          'legume': 'Priporocilo: vkljuci strocnice (leca, fizol) ta teden.',
-          'fruit': 'Priporocilo: dodaj vec sadja ta teden.',
+          'vegetable': 'Priporočilo: izberi več zelenjave ta teden.',
+          'protein': 'Priporočilo: dodaj več beljakovinskih jedi ta teden.',
+          'wholeGrain': 'Priporočilo: poskusi polnozrnate opcije ta teden.',
+          'legume': 'Priporočilo: vključi stročnice (leča, fižol) ta teden.',
+          'fruit': 'Priporočilo: dodaj več sadja ta teden.',
         };
         _healthSuggestion = suggestion[weakest] ??
-            'Priporocilo: izberi vec $label ta teden.';
+            'Priporočilo: izberi več $label ta teden.';
       }
     }
 
@@ -390,7 +393,7 @@ class _StatsScreenState extends State<StatsScreen> {
             : kAccentRed;
 
     return _SectionCard(
-      title: 'AI natancnost',
+      title: 'AI natančnost',
       icon: Icons.auto_awesome,
       iconColor: kAccentMauve,
       child: Column(
@@ -409,7 +412,7 @@ class _StatsScreenState extends State<StatsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Obdrzano $_aiKept / $_aiTotal AI izbir',
+            'Obdržano $_aiKept / $_aiTotal AI izbir',
             style: const TextStyle(fontSize: 13, color: kTextSecondary),
           ),
           const SizedBox(height: 12),
@@ -423,7 +426,7 @@ class _StatsScreenState extends State<StatsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _MiniStat(
-                  label: 'Obdrzano', value: '$_aiKept', color: kAccentGreen),
+                  label: 'Obdržano', value: '$_aiKept', color: kAccentGreen),
               _MiniStat(
                   label: 'Spremenjeno',
                   value: '$overridden',
@@ -439,13 +442,13 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Widget _buildAiNoData() {
     return _SectionCard(
-      title: 'AI natancnost',
+      title: 'AI natančnost',
       icon: Icons.auto_awesome,
       iconColor: kAccentMauve,
       child: const Padding(
         padding: EdgeInsets.symmetric(vertical: 12),
         child: Text(
-          'Podatki o AI natancnosti bodo na voljo po naslednjih oddajah.',
+          'Podatki o AI natančnosti bodo na voljo po naslednjih oddajah.',
           style: TextStyle(fontSize: 13, color: kTextMuted),
           textAlign: TextAlign.center,
         ),
@@ -484,7 +487,7 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Widget _buildTopKeywords() {
     return _SectionCard(
-      title: 'Najljubse jedi',
+      title: 'Najljubše jedi',
       icon: Icons.favorite,
       iconColor: kAccentRed,
       child: Column(
@@ -508,7 +511,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final maxCount = _monthlyCounts.values.reduce(max);
 
     return _SectionCard(
-      title: 'Mesecni pregled',
+      title: 'Mesečni pregled',
       icon: Icons.calendar_month,
       iconColor: kAccentBlue,
       child: Column(
@@ -576,7 +579,7 @@ class _StatsScreenState extends State<StatsScreen> {
           // Food group breakdown
           if (_foodGroupCounts.isNotEmpty) ...[
             const SizedBox(height: 14),
-            const Text('Skupine zivil',
+            const Text('Skupine živil',
                 style: TextStyle(fontSize: 12, color: kTextSecondary)),
             const SizedBox(height: 8),
             _buildFoodGroupBreakdown(),

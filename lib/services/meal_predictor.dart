@@ -177,7 +177,11 @@ class MealPredictor {
     for (final r in ratings) {
       if (r is! Map<String, dynamic>) continue;
       final desc = r['description'] as String? ?? '';
-      final rating = r['rating'] as int? ?? 3;
+      // Defensive parse: stored ratings are int, but a hand-edited or
+      // legacy-format file could serialize as a string. `as int?` would
+      // throw on a String. Coerce via toString+tryParse instead and fall
+      // back to neutral (3) on anything unrecognized.
+      final rating = int.tryParse('${r['rating']}') ?? 3;
       // Normalize: 1→-1, 2→-0.5, 3→0, 4→+0.5, 5→+1
       final normalized = (rating - 3) / 2.0;
       final tokens = tokenize(desc);
@@ -291,10 +295,11 @@ class MealPredictor {
 
     if (bestId == null) return const PickResult.none();
 
-    // All-negative check: the best score is not positive. Combined with the
-    // threshold check, this avoids triggering Odjava when scores are only
-    // mildly negative (e.g. a cold baseline with no strong signal).
-    if (bestScore <= 0 && bestScore <= kOdjavaScoreThreshold) {
+    // If the best available option is still strongly negative, the user
+    // would hate everything today — recommend Odjava instead. The
+    // threshold is negative, so this also implicitly requires no
+    // positive option exists (any positive score would beat the gate).
+    if (bestScore <= kOdjavaScoreThreshold) {
       return PickResult.odjava(bestScore: bestScore);
     }
 
