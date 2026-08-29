@@ -1,1 +1,373 @@
-[{"date":"2026-05-05","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"lepinja, pariška salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"piščančja hrenovka v beli štručki (pšenica), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"bela štručka, maslo in med (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"zelje v solati s fižolom, kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"dve hrenovki v beli štručki (pšenica), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"polnozrnata bombeta, sojin polpet, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"testenine s carbonara omako (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"testenine z mediteransko omako (pšenica), sok","chosen":false}]},{"date":"2026-05-05","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"lepinja, pariška salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"piščančja hrenovka v beli štručki (pšenica), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"bela štručka, maslo in med (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"zelje v solati s fižolom, kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"dve hrenovki v beli štručki (pšenica), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"polnozrnata bombeta, sojin polpet, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"testenine s carbonara omako (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"testenine z mediteransko omako (pšenica), sok","chosen":false}]},{"date":"2026-05-05","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"lepinja, pariška salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"piščančja hrenovka v beli štručki (pšenica), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"bela štručka, maslo in med (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"zelje v solati s fižolom, kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"dve hrenovki v beli štručki (pšenica), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"polnozrnata bombeta, sojin polpet, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"testenine s carbonara omako (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"testenine z mediteransko omako (pšenica), sok","chosen":false}]},{"date":"2026-05-06","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela bombeta, pečena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"polnozrnata žemlja, ogrska salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"polnozrnata bombeta, bučke na žaru, dimljen sir, solata, paprika (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"šopska solata (mlečni izdelek, ki vsebuje laktozo), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"pleskavica v lepinji, sveža zelenjava (pšenica), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"sezamova bombeta, korenčkov namaz s sončničnimi semeni, veganski sir, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"pira s piščancem (gluten), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"pira z gobami in zelenjavo (gluten), sok","chosen":false}]},{"date":"2026-05-06","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela bombeta, pečena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"polnozrnata žemlja, ogrska salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"polnozrnata bombeta, bučke na žaru, dimljen sir, solata, paprika (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"šopska solata (mlečni izdelek, ki vsebuje laktozo), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"pleskavica v lepinji, sveža zelenjava (pšenica), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"sezamova bombeta, korenčkov namaz s sončničnimi semeni, veganski sir, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"pira s piščancem (gluten), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"pira z gobami in zelenjavo (gluten), sok","chosen":false}]},{"date":"2026-05-06","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela bombeta, pečena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"polnozrnata žemlja, ogrska salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"polnozrnata bombeta, bučke na žaru, dimljen sir, solata, paprika (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"šopska solata (mlečni izdelek, ki vsebuje laktozo), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"pleskavica v lepinji, sveža zelenjava (pšenica), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"sezamova bombeta, korenčkov namaz s sončničnimi semeni, veganski sir, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"pira s piščancem (gluten), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"pira z gobami in zelenjavo (gluten), sok","chosen":false}]},{"date":"2026-05-26","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela bombeta, piščančja posebna salama z vrtninami, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"lepinja, kuhan pršut, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"sezamova bombeta, pečena paprika, veganski sir, sveža zelenjava (pšenica), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"zelje v solati s fižolom, kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, hišna omaka, dunajski zrezek iz svinjskega fileja, solata (pšenica, jajca, gorčična semena, soja, sledi oreščkov), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"sezamova bombeta, pečen seitan, sveža zelenjava (pšenica, sezam, soja), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"puranji trakovi v smetanovi omaki, polenta (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"polenta s pečeno zelenjavo, sok","chosen":false}]},{"date":"2026-05-26","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela bombeta, piščančja posebna salama z vrtninami, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"lepinja, kuhan pršut, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"sezamova bombeta, pečena paprika, veganski sir, sveža zelenjava (pšenica), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"zelje v solati s fižolom, kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, hišna omaka, dunajski zrezek iz svinjskega fileja, solata (pšenica, jajca, gorčična semena, soja, sledi oreščkov), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"sezamova bombeta, pečen seitan, sveža zelenjava (pšenica, sezam, soja), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"puranji trakovi v smetanovi omaki, polenta (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"polenta s pečeno zelenjavo, sok","chosen":false}]},{"date":"2026-05-26","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela bombeta, piščančja posebna salama z vrtninami, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"lepinja, kuhan pršut, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"sezamova bombeta, pečena paprika, veganski sir, sveža zelenjava (pšenica), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"zelje v solati s fižolom, kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, hišna omaka, dunajski zrezek iz svinjskega fileja, solata (pšenica, jajca, gorčična semena, soja, sledi oreščkov), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"sezamova bombeta, pečen seitan, sveža zelenjava (pšenica, sezam, soja), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"puranji trakovi v smetanovi omaki, polenta (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"polenta s pečeno zelenjavo, sok","chosen":false}]},{"date":"2026-05-27","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"lepinja, pariška salama, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"črna bombeta, dimljena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"čokoladni navihanček in marelični navihanček (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":true},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"tofu in pečena zelenjava na listnati solati (soja), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, kuhan pršut in ogrska salama, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"polnozrnata štručka, korenčkov namaz s sončničnimi semeni, veganska Gauda, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"mesni kapeleti s smetanovo omako  (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"testenine s tartufato (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false}]},{"date":"2026-05-27","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"lepinja, pariška salama, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"črna bombeta, dimljena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"čokoladni navihanček in marelični navihanček (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":true},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"tofu in pečena zelenjava na listnati solati (soja), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, kuhan pršut in ogrska salama, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"polnozrnata štručka, korenčkov namaz s sončničnimi semeni, veganska Gauda, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"mesni kapeleti s smetanovo omako  (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"testenine s tartufato (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false}]},{"date":"2026-05-27","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"lepinja, pariška salama, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"črna bombeta, dimljena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"čokoladni navihanček in marelični navihanček (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":true},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"tofu in pečena zelenjava na listnati solati (soja), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, kuhan pršut in ogrska salama, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"polnozrnata štručka, korenčkov namaz s sončničnimi semeni, veganska Gauda, sveža zelenjava (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"mesni kapeleti s smetanovo omako  (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"testenine s tartufato (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false}]},{"date":"2026-05-25","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela štručka, kmečki pršut, sir (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"polbela žemlja, piščančje prsi v ovoju, sir, solata(pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"polnozrnata bombeta, sirni namaz, mozzarella, kalčki, solata, paradižnik (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"mešana solata s sirom, jogurtov preliv (mlečni izdelek, ki vsebuje laktozo, gorčična semena, jajca), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika štručka, kmečki pršut, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"mineštra s puranjim filejem in svežo zelenjavo (pšenica, zelena), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"zelenjavna mineštra (pšenica, zelena), kruh (pšenica), sok","chosen":false}]},{"date":"2026-05-25","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela štručka, kmečki pršut, sir (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"polbela žemlja, piščančje prsi v ovoju, sir, solata(pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"polnozrnata bombeta, sirni namaz, mozzarella, kalčki, solata, paradižnik (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"mešana solata s sirom, jogurtov preliv (mlečni izdelek, ki vsebuje laktozo, gorčična semena, jajca), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika štručka, kmečki pršut, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"mineštra s puranjim filejem in svežo zelenjavo (pšenica, zelena), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"zelenjavna mineštra (pšenica, zelena), kruh (pšenica), sok","chosen":false}]},{"date":"2026-05-25","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela štručka, kmečki pršut, sir (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"polbela žemlja, piščančje prsi v ovoju, sir, solata(pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"polnozrnata bombeta, sirni namaz, mozzarella, kalčki, solata, paradižnik (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"mešana solata s sirom, jogurtov preliv (mlečni izdelek, ki vsebuje laktozo, gorčična semena, jajca), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika štručka, kmečki pršut, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"mineštra s puranjim filejem in svežo zelenjavo (pšenica, zelena), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"zelenjavna mineštra (pšenica, zelena), kruh (pšenica), sok","chosen":false}]},{"date":"2026-05-28","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"polnozrnata štručka, tunin namaz, sveže zelje (pšenica), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"lepinja, kraška panceta, sir, sveža paprika  (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"makova štručka, jajčni namaz, kuhana koruza, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"mehiška solata (paradižnik, paprika, fižol, cvetača, koruza..), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, sirni namaz, kraška panceta, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"pira z bučkami in korenčkom (pira-gluten), sadje, sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"ričet s klobaso (ječmen-gluten), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"ričet s korenčkom (ječmen-gluten), kruh (pšenica), sok","chosen":false}]},{"date":"2026-05-28","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"polnozrnata štručka, tunin namaz, sveže zelje (pšenica), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"lepinja, kraška panceta, sir, sveža paprika  (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"makova štručka, jajčni namaz, kuhana koruza, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"mehiška solata (paradižnik, paprika, fižol, cvetača, koruza..), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, sirni namaz, kraška panceta, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"pira z bučkami in korenčkom (pira-gluten), sadje, sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"ričet s klobaso (ječmen-gluten), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"ričet s korenčkom (ječmen-gluten), kruh (pšenica), sok","chosen":false}]},{"date":"2026-05-28","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"polnozrnata štručka, tunin namaz, sveže zelje (pšenica), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"lepinja, kraška panceta, sir, sveža paprika  (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"makova štručka, jajčni namaz, kuhana koruza, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"mehiška solata (paradižnik, paprika, fižol, cvetača, koruza..), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"velika lepinja, sirni namaz, kraška panceta, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"pira z bučkami in korenčkom (pira-gluten), sadje, sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"ričet s klobaso (ječmen-gluten), kruh (pšenica), sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"ričet s korenčkom (ječmen-gluten), kruh (pšenica), sok","chosen":false}]},{"date":"2026-05-29","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela žemlja, sirni namaz, ogrska salama in šunka, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"sezamova bombeta, piščančji burger, solata (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"graham žemlja, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"polnozrnate testenine v solati s tunino in zelenjavo (pira, pšenica, ribe, mlečni izdelek, ki vsebuje laktozo, jajca, gorčična semena), sadje, sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"kuhana klobasa v štručki, gorčica (pšenica, gorčična semena), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"kraška rižota, sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"smetanova rižota s curry-jem, čičeriko in zelenjavo  (mlečni izdelek, ki vsebuje laktozo), sok","chosen":false}]},{"date":"2026-05-29","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela žemlja, sirni namaz, ogrska salama in šunka, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"sezamova bombeta, piščančji burger, solata (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"graham žemlja, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"polnozrnate testenine v solati s tunino in zelenjavo (pira, pšenica, ribe, mlečni izdelek, ki vsebuje laktozo, jajca, gorčična semena), sadje, sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"kuhana klobasa v štručki, gorčica (pšenica, gorčična semena), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"kraška rižota, sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"smetanova rižota s curry-jem, čičeriko in zelenjavo  (mlečni izdelek, ki vsebuje laktozo), sok","chosen":false}]},{"date":"2026-05-29","options":[{"menu_name":"Meni 1","menu_id":"71560","description":"bela žemlja, sirni namaz, ogrska salama in šunka, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 2","menu_id":"71568","description":"sezamova bombeta, piščančji burger, solata (pšenica, sezam), sok","chosen":false},{"menu_name":"Meni 3 (veg)","menu_id":"71576","description":"graham žemlja, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok","chosen":false},{"menu_name":"Meni 4 (fit)","menu_id":"71584","description":"polnozrnate testenine v solati s tunino in zelenjavo (pira, pšenica, ribe, mlečni izdelek, ki vsebuje laktozo, jajca, gorčična semena), sadje, sok","chosen":false},{"menu_name":"Meni 5 (XXL +0,70€)","menu_id":"71592","description":"kuhana klobasa v štručki, gorčica (pšenica, gorčična semena), sok","chosen":true},{"menu_name":"Meni 6 (vegan)","menu_id":"71600","description":"presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok","chosen":false},{"menu_name":"Meni 7 (mesni topli)","menu_id":"71608","description":"kraška rižota, sok","chosen":false},{"menu_name":"Meni 8 (vegi topli)","menu_id":"71616","description":"smetanova rižota s curry-jem, čičeriko in zelenjavo  (mlečni izdelek, ki vsebuje laktozo), sok","chosen":false}]}]
+[
+  {
+    "date": "2026-05-05",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "lepinja, pariška salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "piščančja hrenovka v beli štručki (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "bela štručka, maslo in med (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "zelje v solati s fižolom, kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "dve hrenovki v beli štručki (pšenica), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "polnozrnata bombeta, sojin polpet, sveža zelenjava (pšenica, sezam), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "testenine s carbonara omako (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "testenine z mediteransko omako (pšenica), sok",
+        "chosen": false
+      }
+    ]
+  },
+  {
+    "date": "2026-05-06",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "bela bombeta, pečena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "polnozrnata žemlja, ogrska salama, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "polnozrnata bombeta, bučke na žaru, dimljen sir, solata, paprika (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "šopska solata (mlečni izdelek, ki vsebuje laktozo), kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "pleskavica v lepinji, sveža zelenjava (pšenica), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "sezamova bombeta, korenčkov namaz s sončničnimi semeni, veganski sir, sveža zelenjava (pšenica, sezam), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "pira s piščancem (gluten), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "pira z gobami in zelenjavo (gluten), sok",
+        "chosen": false
+      }
+    ]
+  },
+  {
+    "date": "2026-05-26",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "bela bombeta, piščančja posebna salama z vrtninami, sir, kisla kumarica (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "lepinja, kuhan pršut, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "sezamova bombeta, pečena paprika, veganski sir, sveža zelenjava (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "zelje v solati s fižolom, kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "velika lepinja, hišna omaka, dunajski zrezek iz svinjskega fileja, solata (pšenica, jajca, gorčična semena, soja, sledi oreščkov), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "sezamova bombeta, pečen seitan, sveža zelenjava (pšenica, sezam, soja), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "puranji trakovi v smetanovi omaki, polenta (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "polenta s pečeno zelenjavo, sok",
+        "chosen": false
+      }
+    ]
+  },
+  {
+    "date": "2026-05-27",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "lepinja, pariška salama, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "črna bombeta, dimljena puranja šunka, sir, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "čokoladni navihanček in marelični navihanček (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "tofu in pečena zelenjava na listnati solati (soja), kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "velika lepinja, kuhan pršut in ogrska salama, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "polnozrnata štručka, korenčkov namaz s sončničnimi semeni, veganska Gauda, sveža zelenjava (pšenica, sezam), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "mesni kapeleti s smetanovo omako  (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "testenine s tartufato (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      }
+    ]
+  },
+  {
+    "date": "2026-05-25",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "bela štručka, kmečki pršut, sir (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "polbela žemlja, piščančje prsi v ovoju, sir, solata(pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "polnozrnata bombeta, sirni namaz, mozzarella, kalčki, solata, paradižnik (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "mešana solata s sirom, jogurtov preliv (mlečni izdelek, ki vsebuje laktozo, gorčična semena, jajca), kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "velika štručka, kmečki pršut, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "mineštra s puranjim filejem in svežo zelenjavo (pšenica, zelena), kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "zelenjavna mineštra (pšenica, zelena), kruh (pšenica), sok",
+        "chosen": false
+      }
+    ]
+  },
+  {
+    "date": "2026-05-28",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "polnozrnata štručka, tunin namaz, sveže zelje (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "lepinja, kraška panceta, sir, sveža paprika  (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "makova štručka, jajčni namaz, kuhana koruza, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "mehiška solata (paradižnik, paprika, fižol, cvetača, koruza..), kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "velika lepinja, sirni namaz, kraška panceta, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "pira z bučkami in korenčkom (pira-gluten), sadje, sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "ričet s klobaso (ječmen-gluten), kruh (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "ričet s korenčkom (ječmen-gluten), kruh (pšenica), sok",
+        "chosen": false
+      }
+    ]
+  },
+  {
+    "date": "2026-05-29",
+    "options": [
+      {
+        "menu_name": "Meni 1",
+        "menu_id": "71560",
+        "description": "bela žemlja, sirni namaz, ogrska salama in šunka, solata (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 2",
+        "menu_id": "71568",
+        "description": "sezamova bombeta, piščančji burger, solata (pšenica, sezam), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 3 (veg)",
+        "menu_id": "71576",
+        "description": "graham žemlja, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 4 (fit)",
+        "menu_id": "71584",
+        "description": "polnozrnate testenine v solati s tunino in zelenjavo (pira, pšenica, ribe, mlečni izdelek, ki vsebuje laktozo, jajca, gorčična semena), sadje, sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 5 (XXL +0,70€)",
+        "menu_id": "71592",
+        "description": "kuhana klobasa v štručki, gorčica (pšenica, gorčična semena), sok",
+        "chosen": true
+      },
+      {
+        "menu_name": "Meni 6 (vegan)",
+        "menu_id": "71600",
+        "description": "presno sadje in zelenjava, polnozrnata bombeta (pšenica), sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 7 (mesni topli)",
+        "menu_id": "71608",
+        "description": "kraška rižota, sok",
+        "chosen": false
+      },
+      {
+        "menu_name": "Meni 8 (vegi topli)",
+        "menu_id": "71616",
+        "description": "smetanova rižota s curry-jem, čičeriko in zelenjavo  (mlečni izdelek, ki vsebuje laktozo), sok",
+        "chosen": false
+      }
+    ]
+  }
+]
