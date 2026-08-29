@@ -16,7 +16,9 @@ String _stripAllergens(String desc) {
       .replaceAll(RegExp(r',\s*$'), '');
 }
 
-const _navBarPad = 90.0;
+/// Bottom gutter. The tab bar insets content on its own now, so this is
+/// just breathing room at the end of a scroll.
+const _navBarPad = 24.0;
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});

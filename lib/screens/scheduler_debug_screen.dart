@@ -21,7 +21,7 @@ class SchedulerDebugScreen extends StatefulWidget {
 
 class _SchedulerDebugScreenState extends State<SchedulerDebugScreen> {
   static const _maxDisplayLines = 200;
-  static const _navBarPad = 90.0;
+  static const _navBarPad = 24.0;
 
   String _fullLog = '';
   List<String> _displayLines = const [];

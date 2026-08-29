@@ -22,7 +22,9 @@ const _monthNames = <int, String>{
   12: 'Dec',
 };
 
-const _navBarPad = 90.0;
+/// Bottom gutter. The tab bar insets content on its own now, so this is
+/// just breathing room at the end of a scroll.
+const _navBarPad = 24.0;
 
 /// Comprehensive Slovenian stop words: prepositions, conjunctions, adjectives,
 /// articles, verbs, and other non-food filler words.
@@ -405,9 +407,6 @@ class _StatsScreenState extends State<StatsScreen> {
               fontSize: 42,
               fontWeight: FontWeight.w700,
               color: color,
-              shadows: [
-                Shadow(color: color.withAlpha(100), blurRadius: 16),
-              ],
             ),
           ),
           const SizedBox(height: 4),
@@ -690,38 +689,26 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
+    // iOS section: muted uppercase label sitting outside the group, no icon
+    // and no gradient rule. The colour lives in the data below, not the label.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kSp16, 0, kSp16, kSp8),
+          child: Text(title.toUpperCase(),
+              style: kFootnote.copyWith(letterSpacing: 0.5)),
+        ),
+        GlassCard(
+      padding: const EdgeInsets.all(kSp16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: iconColor),
-              const SizedBox(width: 8),
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: kTextPrimary)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  iconColor.withAlpha(0),
-                  iconColor.withAlpha(80),
-                  iconColor.withAlpha(0),
-                ],
-              ),
-            ),
-          ),
           child,
         ],
       ),
+        ),
+      ],
     );
   }
 }
@@ -755,9 +742,6 @@ class _MiniStat extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 color: color,
-                shadows: [
-                  Shadow(color: color.withAlpha(100), blurRadius: 8),
-                ],
               )),
           const SizedBox(height: 2),
           Text(label,
@@ -808,9 +792,6 @@ class _MenuTypeRow extends StatelessWidget {
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: color,
-                    shadows: [
-                      Shadow(color: color.withAlpha(100), blurRadius: 6),
-                    ],
                   )),
               const SizedBox(width: 6),
               SizedBox(
@@ -882,9 +863,6 @@ class _KeywordRow extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: glowColor,
-                  shadows: [
-                    Shadow(color: glowColor.withAlpha(120), blurRadius: 6),
-                  ],
                 )),
           ),
         ],

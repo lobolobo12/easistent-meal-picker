@@ -1,65 +1,325 @@
-import 'dart:ui';
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-// ── Background gradient ──
+/// iOS-native design system.
+///
+/// Colours, type and spacing follow Apple's Human Interface Guidelines dark
+/// mode rather than inventing values per widget. Everything here is a token —
+/// screens should reference these, never raw numbers.
+///
+/// Legacy `kGlass*` / `GlassCard` names are kept as aliases so the screens
+/// written against the old glassmorphism theme keep compiling; they now render
+/// as iOS grouped surfaces.
 
-const kBgTop = Color(0xFF0b0f1a);
-const kBgBottom = Color(0xFF1a1d2e);
+// ── System backgrounds (HIG dark, grouped hierarchy) ──
+//
+// iOS layers grouped content: a near-black ground, rows one step lighter,
+// and selected/nested content one step lighter again. Depth comes from these
+// steps, not from blur or glow.
 
+const kBgBase = Color(0xFF000000); // systemGroupedBackground
+const kBgElevated = Color(0xFF1C1C1E); // secondarySystemGroupedBackground
+const kBgElevated2 = Color(0xFF2C2C2E); // tertiarySystemGroupedBackground
+const kBgElevated3 = Color(0xFF3A3A3C);
+
+const kSeparator = Color(0xFF38383A); // opaque separator
+const kSeparatorThin = Color(0x5C545458); // non-opaque separator
+
+// ── Labels ──
+
+const kLabel = Color(0xFFFFFFFF);
+const kLabelSecondary = Color(0x99EBEBF5); // 60%
+const kLabelTertiary = Color(0x4DEBEBF5); // 30%
+const kLabelQuaternary = Color(0x2DEBEBF5); // 18%
+
+// ── System accents (HIG dark variants) ──
+
+const kBlue = Color(0xFF0A84FF);
+const kGreen = Color(0xFF30D158);
+const kIndigo = Color(0xFF5E5CE6);
+const kOrange = Color(0xFFFF9F0A);
+const kPink = Color(0xFFFF375F);
+const kPurple = Color(0xFFBF5AF2);
+const kRed = Color(0xFFFF453A);
+const kTeal = Color(0xFF64D2FF);
+const kYellow = Color(0xFFFFD60A);
+
+/// The single app accent. One tint, used for interaction — not decoration.
+const kAccent = kOrange;
+
+// ── Spacing: 4pt grid ──
+
+const double kSp2 = 2;
+const double kSp4 = 4;
+const double kSp8 = 8;
+const double kSp12 = 12;
+const double kSp16 = 16; // standard iOS screen margin
+const double kSp20 = 20;
+const double kSp24 = 24;
+const double kSp32 = 32;
+
+// ── Radii ──
+
+const double kRadiusRow = 10; // inset grouped list
+const double kRadiusCard = 12;
+const double kRadiusSheet = 20;
+
+// ── Type scale (iOS text styles) ──
+//
+// No fontFamily is set anywhere: on iOS that resolves to San Francisco, which
+// is what makes the app read as native.
+
+const kLargeTitle = TextStyle(
+    fontSize: 34, fontWeight: FontWeight.w700, color: kLabel, height: 1.2);
+const kTitle1 = TextStyle(
+    fontSize: 28, fontWeight: FontWeight.w700, color: kLabel, height: 1.2);
+const kTitle2 = TextStyle(
+    fontSize: 22, fontWeight: FontWeight.w700, color: kLabel, height: 1.25);
+const kTitle3 = TextStyle(
+    fontSize: 20, fontWeight: FontWeight.w600, color: kLabel, height: 1.25);
+const kHeadline = TextStyle(
+    fontSize: 17, fontWeight: FontWeight.w600, color: kLabel, height: 1.3);
+const kBody = TextStyle(
+    fontSize: 17, fontWeight: FontWeight.w400, color: kLabel, height: 1.35);
+const kCallout = TextStyle(
+    fontSize: 16, fontWeight: FontWeight.w400, color: kLabel, height: 1.35);
+const kSubhead = TextStyle(
+    fontSize: 15, fontWeight: FontWeight.w400, color: kLabelSecondary,
+    height: 1.35);
+const kFootnote = TextStyle(
+    fontSize: 13, fontWeight: FontWeight.w400, color: kLabelSecondary,
+    height: 1.35);
+const kCaption = TextStyle(
+    fontSize: 12, fontWeight: FontWeight.w400, color: kLabelSecondary,
+    height: 1.3);
+const kCaption2 = TextStyle(
+    fontSize: 11, fontWeight: FontWeight.w400, color: kLabelTertiary,
+    height: 1.3);
+
+// ── Legacy aliases ──
+//
+// The screens were written against the old glass theme. Rather than touch
+// 6,000 lines at once, the old names now point at HIG tokens.
+
+const kBgTop = kBgBase;
+const kBgBottom = kBgBase;
+const kGlassFill = kBgElevated;
+const kGlassBorder = kSeparatorThin;
+const kGlassSelected = kBgElevated2;
+
+const kTextPrimary = kLabel;
+const kTextSecondary = kLabelSecondary;
+const kTextMuted = kLabelTertiary;
+
+const kAccentAmber = kOrange;
+const kAccentGreen = kGreen;
+const kAccentPurple = kPurple;
+const kAccentBlue = kBlue;
+const kAccentTeal = kTeal;
+const kAccentRed = kRed;
+const kAccentMauve = kIndigo;
+const kAccentYellow = kYellow;
+
+/// Flat ground. Kept as a gradient so existing `BoxDecoration(gradient:)`
+/// call sites still work, but iOS uses a solid grouped background.
 const kBgGradient = LinearGradient(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
-  colors: [kBgTop, kBgBottom],
+  colors: [kBgBase, kBgBase],
 );
 
-// ── Glass colors ──
+// ── Menu-type → accent ──
 
-const kGlassFill = Color(0x14FFFFFF); // ~8% white
-const kGlassBorder = Color(0x28FFFFFF); // ~16% white
-const kGlassSelected = Color(0x20FFFFFF); // ~12% white
+const _menuPalette = [kBlue, kGreen, kIndigo, kTeal, kPurple];
 
-// ── Text colors ──
-
-const kTextPrimary = Color(0xFFe2e8f0);
-const kTextSecondary = Color(0xFFa0aec0);
-const kTextMuted = Color(0xFF64748b);
-
-// ── Accent colors ──
-
-const kAccentAmber = Color(0xFFf6ad55); // warm orange — meat / default
-const kAccentGreen = Color(0xFF68d391); // green — veg
-const kAccentPurple = Color(0xFFb794f6); // purple — fit
-const kAccentBlue = Color(0xFF63b3ed); // blue — XXL
-const kAccentTeal = Color(0xFF4fd1c5); // teal — vegan
-const kAccentRed = Color(0xFFfc8181); // red — errors / cancel
-const kAccentMauve = Color(0xFFd6bcfa); // mauve — AI indicator
-const kAccentYellow = Color(0xFFfbd38d); // yellow — warnings / eA ordered
-
-// ── Menu‑type → accent color ──
-
-const _menuPalette = [
-  kAccentAmber, kAccentGreen, kAccentPurple, kAccentBlue, kAccentTeal,
-];
-
+/// Colour for a menu name. Used sparingly — as a small leading dot or a
+/// selected-row tint, never as a full-card wash.
 Color menuColor(String menuName) {
   final l = menuName.toLowerCase().trim();
-  // Keyword hints — work for any school's naming convention
-  if (l.contains('fit')) return kAccentPurple;
-  if (l.contains('xxl')) return kAccentBlue;
-  if (l.contains('vegan')) return kAccentTeal;
-  if (l.contains('vegetarijan') || l.contains('veg')) return kAccentGreen;
-  // Number-based: extract first digit and cycle through palette
+  if (l.contains('fit')) return kPurple;
+  if (l.contains('xxl')) return kBlue;
+  if (l.contains('vegan')) return kTeal;
+  if (l.contains('vegetarijan') || l.contains('veg')) return kGreen;
   final m = RegExp(r'(\d+)').firstMatch(l);
   if (m != null) {
     final num = int.tryParse(m.group(1)!) ?? 1;
     return _menuPalette[(num - 1) % _menuPalette.length];
   }
-  return kAccentAmber;
+  return kAccent;
 }
 
-// ── GlassCard — reusable glassmorphism container ──
+// ── Inset grouped list ──
 
+/// iOS grouped-list section: an optional upper-case header, then rows in a
+/// single rounded container with hairline separators between them.
+class InsetGroup extends StatelessWidget {
+  final String? header;
+  final String? footer;
+  final List<Widget> children;
+  final EdgeInsets margin;
+
+  const InsetGroup({
+    super.key,
+    this.header,
+    this.footer,
+    required this.children,
+    this.margin = const EdgeInsets.only(bottom: kSp24),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var i = 0; i < children.length; i++) {
+      rows.add(children[i]);
+      if (i != children.length - 1) {
+        rows.add(const Padding(
+          padding: EdgeInsets.only(left: kSp16),
+          child: Divider(
+              height: 0.5, thickness: 0.5, color: kSeparator),
+        ));
+      }
+    }
+
+    return Padding(
+      padding: margin,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (header != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kSp16, 0, kSp16, kSp8),
+              child: Text(header!.toUpperCase(),
+                  style: kFootnote.copyWith(
+                      color: kLabelSecondary, letterSpacing: 0.5)),
+            ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(kRadiusRow),
+            child: ColoredBox(
+              color: kBgElevated,
+              child: Column(children: rows),
+            ),
+          ),
+          if (footer != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(kSp16, kSp8, kSp16, 0),
+              child: Text(footer!, style: kFootnote),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single row inside an [InsetGroup]: leading icon, title, optional
+/// subtitle, trailing value and chevron. 44pt minimum height per HIG.
+class InsetRow extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final String? value;
+  final IconData? icon;
+  final Color? iconColor;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final bool showChevron;
+
+  const InsetRow({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.value,
+    this.icon,
+    this.iconColor,
+    this.trailing,
+    this.onTap,
+    this.showChevron = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: kSp16, vertical: kSp8),
+            child: Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 20, color: iconColor ?? kAccent),
+                  const SizedBox(width: kSp12),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(title, style: kBody),
+                      if (subtitle != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: kSp2),
+                          child: Text(subtitle!, style: kFootnote),
+                        ),
+                    ],
+                  ),
+                ),
+                if (value != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: kSp8),
+                    child: Text(value!,
+                        style: kBody.copyWith(color: kLabelSecondary)),
+                  ),
+                if (trailing != null) ...[
+                  const SizedBox(width: kSp8),
+                  trailing!,
+                ],
+                if (showChevron)
+                  const Padding(
+                    padding: EdgeInsets.only(left: kSp4),
+                    child: Icon(CupertinoIcons.chevron_right,
+                        size: 14, color: kLabelTertiary),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Free-standing section header for screens that aren't grouped lists.
+class SectionHeader extends StatelessWidget {
+  final String label;
+  final Widget? trailing;
+
+  const SectionHeader(this.label, {super.key, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(kSp16, kSp8, kSp16, kSp8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label.toUpperCase(),
+                style: kFootnote.copyWith(
+                    color: kLabelSecondary, letterSpacing: 0.5)),
+          ),
+          if (trailing != null) trailing!,
+        ],
+      ),
+    );
+  }
+}
+
+// ── Card surface (legacy name, iOS styling) ──
+
+/// An elevated iOS surface. Formerly a blurred glass panel; now a flat
+/// grouped-background card. Selection is shown with a tinted fill and a
+/// 1pt accent border, not a coloured glow.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -72,9 +332,9 @@ class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(14),
+    this.padding = const EdgeInsets.all(kSp16),
     this.margin = EdgeInsets.zero,
-    this.radius = 16,
+    this.radius = kRadiusCard,
     this.selected = false,
     this.borderColor,
     this.onTap,
@@ -83,57 +343,29 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final br = BorderRadius.circular(radius);
-    final effectiveBorder = selected && borderColor != null
-        ? borderColor!
-        : kGlassBorder;
-    final effectiveWidth = selected ? 1.5 : 0.5;
-    final fill = selected
-        ? (borderColor ?? kGlassFill).withAlpha(30)
-        : kGlassFill;
+    final accent = borderColor ?? kAccent;
 
-    Widget card = ClipRRect(
-      borderRadius: br,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Material(
-          color: fill,
-          shape: RoundedRectangleBorder(
-            borderRadius: br,
-            side: BorderSide(color: effectiveBorder, width: effectiveWidth),
-          ),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: br,
-            splashColor: Colors.white.withAlpha(12),
-            highlightColor: Colors.white.withAlpha(8),
-            child: Padding(padding: padding, child: child),
-          ),
+    return Padding(
+      padding: margin,
+      child: Material(
+        color: selected ? accent.withValues(alpha: 0.16) : kBgElevated,
+        shape: RoundedRectangleBorder(
+          borderRadius: br,
+          side: selected
+              ? BorderSide(color: accent, width: 1)
+              : BorderSide.none,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );
-
-    if (selected && borderColor != null) {
-      card = DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: br,
-          boxShadow: [
-            BoxShadow(
-              color: borderColor!.withAlpha(50),
-              blurRadius: 14,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: card,
-      );
-    }
-
-    return Padding(padding: margin, child: card);
   }
 }
 
-// ── GlassBar — thin glass strip (app bars, stat bars) ──
-
+/// Top bar strip. Solid iOS navigation-bar fill with a hairline bottom rule.
 class GlassBar extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -141,30 +373,25 @@ class GlassBar extends StatelessWidget {
   const GlassBar({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    this.padding =
+        const EdgeInsets.symmetric(horizontal: kSp16, vertical: kSp12),
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          width: double.infinity,
-          padding: padding,
-          decoration: const BoxDecoration(
-            color: kGlassFill,
-            border: Border(bottom: BorderSide(color: kGlassBorder, width: 0.5)),
-          ),
-          child: child,
-        ),
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: const BoxDecoration(
+        color: kBgBase,
+        border: Border(bottom: BorderSide(color: kSeparator, width: 0.5)),
       ),
+      child: child,
     );
   }
 }
 
-// ── Pill chip — small tag ──
-
+/// Small status badge. iOS uses these sparingly, so keep them quiet.
 class PillChip extends StatelessWidget {
   final String label;
   final Color color;
@@ -180,120 +407,158 @@ class PillChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: kSp8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withAlpha(60)),
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
             Icon(icon, size: 11, color: color),
-            const SizedBox(width: 3),
+            const SizedBox(width: kSp4),
           ],
           Text(label,
               style: TextStyle(
-                  fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                  fontSize: 12, color: color, fontWeight: FontWeight.w600)),
         ],
       ),
     );
   }
 }
 
-// ── App‑wide ThemeData ──
+// ── App-wide ThemeData ──
 
 ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: Colors.transparent,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: kAccentAmber,
-      brightness: Brightness.dark,
-      surface: Colors.transparent,
+    // Resolves to San Francisco on iOS — the single biggest cue that an app
+    // belongs on the platform.
+    typography: Typography.material2021(platform: TargetPlatform.iOS),
+    scaffoldBackgroundColor: kBgBase,
+    canvasColor: kBgBase,
+    splashFactory: NoSplash.splashFactory,
+    highlightColor: kLabelQuaternary,
+    colorScheme: const ColorScheme.dark(
+      primary: kAccent,
+      onPrimary: Colors.black,
+      secondary: kBlue,
+      surface: kBgElevated,
+      onSurface: kLabel,
+      error: kRed,
     ),
+    // iOS large navigation title: left-aligned, 34pt, sitting on the screen
+    // margin. Setting it here gives every screen the platform title without
+    // converting each one to a sliver app bar.
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.transparent,
+      backgroundColor: kBgBase,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,
-      foregroundColor: kTextPrimary,
-      titleTextStyle: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: kTextPrimary,
-      ),
+      centerTitle: false,
+      titleSpacing: kSp16,
+      toolbarHeight: 88,
+      foregroundColor: kLabel,
+      titleTextStyle: kLargeTitle,
+      actionsIconTheme: IconThemeData(color: kAccent, size: 22),
+      iconTheme: IconThemeData(color: kAccent, size: 22),
     ),
-    cardColor: kGlassFill,
-    dividerColor: kGlassBorder,
+    cardColor: kBgElevated,
+    dividerColor: kSeparator,
+    dividerTheme: const DividerThemeData(
+        color: kSeparator, thickness: 0.5, space: 0.5),
+    listTileTheme: const ListTileThemeData(
+      titleTextStyle: kBody,
+      subtitleTextStyle: kFootnote,
+      iconColor: kAccent,
+    ),
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: const Color(0xE6181c2a),
-      contentTextStyle: const TextStyle(color: kTextPrimary, fontSize: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: kBgElevated2,
+      contentTextStyle: kSubhead.copyWith(color: kLabel),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusCard)),
       behavior: SnackBarBehavior.floating,
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: const Color(0xFF1a1d2e),
+      backgroundColor: kBgElevated2,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      titleTextStyle: const TextStyle(
-          fontSize: 18, fontWeight: FontWeight.w600, color: kTextPrimary),
-      contentTextStyle: const TextStyle(fontSize: 14, color: kTextSecondary),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusSheet)),
+      titleTextStyle: kHeadline,
+      contentTextStyle: kSubhead,
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: kAccentAmber,
-        foregroundColor: kBgTop,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        backgroundColor: kAccent,
+        foregroundColor: Colors.black,
+        minimumSize: const Size.fromHeight(50),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusCard)),
+        textStyle: kHeadline.copyWith(color: Colors.black),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(foregroundColor: kTextSecondary),
+      style: TextButton.styleFrom(
+        foregroundColor: kAccent,
+        textStyle: kBody,
+      ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: kTextSecondary,
-        side: BorderSide(color: kGlassBorder),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        foregroundColor: kAccent,
+        minimumSize: const Size.fromHeight(50),
+        side: const BorderSide(color: kSeparator),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusCard)),
+        textStyle: kBody,
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: kGlassFill,
+      fillColor: kBgElevated2,
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: kSp12, vertical: kSp12),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kGlassBorder),
+        borderRadius: BorderRadius.circular(kRadiusRow),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kGlassBorder),
+        borderRadius: BorderRadius.circular(kRadiusRow),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kAccentAmber, width: 1.5),
+        borderRadius: BorderRadius.circular(kRadiusRow),
+        borderSide: const BorderSide(color: kAccent, width: 1.5),
       ),
-      labelStyle: const TextStyle(color: kTextMuted),
-      hintStyle: const TextStyle(color: kTextMuted),
-      prefixIconColor: kTextMuted,
+      labelStyle: kSubhead,
+      hintStyle: kSubhead.copyWith(color: kLabelTertiary),
+      prefixIconColor: kLabelSecondary,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: kGlassFill,
-      side: const BorderSide(color: kGlassBorder),
-      labelStyle: const TextStyle(fontSize: 13, color: kTextPrimary),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      backgroundColor: kBgElevated2,
+      side: BorderSide.none,
+      labelStyle: kFootnote.copyWith(color: kLabel),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+    ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.all(Colors.white),
+      trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? kGreen : kBgElevated3),
+      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
-      color: kAccentAmber,
+      color: kAccent,
+      linearTrackColor: kBgElevated2,
+      circularTrackColor: kBgElevated2,
     ),
   );
 }
 
 // ── Centered toast overlay ──
 
-/// Shows a centered, auto-dismissing glass toast instead of a bottom SnackBar.
+/// Auto-dismissing centred toast. iOS-flavoured: solid material, no glow.
 void showCenteredToast(BuildContext context, String message, {Color? color}) {
   final overlay = Overlay.of(context);
   late OverlayEntry entry;
@@ -352,37 +617,50 @@ class _CenteredToastState extends State<_CenteredToast>
 
   @override
   Widget build(BuildContext context) {
-    final accent = widget.color ?? kAccentAmber;
+    final accent = widget.color;
     return Positioned.fill(
       child: IgnorePointer(
         child: Center(
           child: AnimatedBuilder(
             animation: _opacity,
-            builder: (ctx, child) => Opacity(opacity: _opacity.value, child: child),
+            builder: (ctx, child) =>
+                Opacity(opacity: _opacity.value, child: child),
             child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 32),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              margin: const EdgeInsets.symmetric(horizontal: kSp32),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: kSp20, vertical: kSp16),
               decoration: BoxDecoration(
-                color: const Color(0xE6181c2a),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: accent.withAlpha(60), width: 0.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withAlpha(40),
-                    blurRadius: 24,
-                    spreadRadius: 0,
+                color: kBgElevated2,
+                borderRadius: BorderRadius.circular(kRadiusSheet),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (accent != null) ...[
+                    Container(
+                      width: 3,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: kSp12),
+                  ],
+                  Flexible(
+                    child: Text(
+                      widget.message,
+                      textAlign:
+                          accent != null ? TextAlign.left : TextAlign.center,
+                      style: const TextStyle(
+                        color: kLabel,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
                   ),
                 ],
-              ),
-              child: Text(
-                widget.message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: kTextPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  decoration: TextDecoration.none,
-                ),
               ),
             ),
           ),

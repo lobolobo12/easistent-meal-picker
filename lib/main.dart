@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:home_widget/home_widget.dart';
 
@@ -194,123 +195,101 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(gradient: kBgGradient),
-      child: Stack(
-        children: [
-          // Screens
-          Scaffold(
-            backgroundColor: Colors.transparent,
-            body: IndexedStack(
-              index: _currentIndex,
-              children: [
-                MenuScreen(key: _menuKey),
-                const TrainingScreen(),
-                const StatsScreen(),
-                const HealthScreen(),
-                const LogScreen(),
-                SettingsScreen(key: _settingsKey, onLogout: _onLogout),
-              ],
-            ),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: kBgBase,
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              MenuScreen(key: _menuKey),
+              const TrainingScreen(),
+              const StatsScreen(),
+              const HealthScreen(),
+              const LogScreen(),
+              SettingsScreen(key: _settingsKey, onLogout: _onLogout),
+            ],
           ),
-          // Floating glass nav bar
-          Positioned(
-            bottom: MediaQuery.of(context).padding.bottom + 12,
-            left: 20,
-            right: 20,
-            child: _GlassNavBar(
-              selectedIndex: _currentIndex,
-              onTap: _onTabChanged,
-              itemKeys: _navItemKeys,
-            ),
+          bottomNavigationBar: _TabBar(
+            selectedIndex: _currentIndex,
+            onTap: _onTabChanged,
+            itemKeys: _navItemKeys,
           ),
-          // Feature tour overlay
-          if (_tourStep != null)
-            _TourOverlay(
-              step: _tourStep!,
-              targetKey: _tourStep! < 6 ? _navItemKeys[_tourStep!] : null,
-              onNext: _nextTourStep,
-              onSkip: _endTour,
-            ),
-        ],
-      ),
+        ),
+        // Feature tour overlay
+        if (_tourStep != null)
+          _TourOverlay(
+            step: _tourStep!,
+            targetKey: _tourStep! < 6 ? _navItemKeys[_tourStep!] : null,
+            onNext: _nextTourStep,
+            onSkip: _endTour,
+          ),
+      ],
     );
   }
 }
 
-// ── Floating glass pill nav bar ──
+// ── iOS tab bar ──
 
-class _GlassNavBar extends StatelessWidget {
+/// Standard iOS bottom tab bar: full-bleed, anchored above the home
+/// indicator, hairline rule on top, icon over a small always-visible label.
+/// Replaces the floating glass pill, which overlapped screen content and read
+/// as distinctly non-native.
+class _TabBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
   final List<GlobalKey>? itemKeys;
 
-  const _GlassNavBar({required this.selectedIndex, required this.onTap, this.itemKeys});
+  const _TabBar({
+    required this.selectedIndex,
+    required this.onTap,
+    this.itemKeys,
+  });
 
   static const _items = [
-    (Icons.restaurant_menu, 'Meni'),
-    (Icons.fitness_center, 'Trening'),
-    (Icons.bar_chart, 'Statistika'),
-    (Icons.favorite, 'Zdravje'),
-    (Icons.history, 'Dnevnik'),
-    (Icons.settings, 'Nastavitve'),
+    (CupertinoIcons.list_bullet, 'Meni'),
+    (CupertinoIcons.wand_stars, 'Trening'),
+    (CupertinoIcons.chart_bar_alt_fill, 'Statistika'),
+    (CupertinoIcons.heart_fill, 'Zdravje'),
+    (CupertinoIcons.clock_fill, 'Dnevnik'),
+    (CupertinoIcons.gear_alt_fill, 'Nastavitve'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          height: 60,
-          decoration: BoxDecoration(
-            color: const Color(0x1AFFFFFF),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: const Color(0x30FFFFFF), width: 0.5),
-          ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: kBgBase,
+        border: Border(top: BorderSide(color: kSeparator, width: 0.5)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 49,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: List.generate(_items.length, (i) {
               final sel = i == selectedIndex;
-              return GestureDetector(
-                key: itemKeys?[i],
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onTap(i),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeOutCubic,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: sel ? 12 : 6, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: sel ? kAccentAmber.withAlpha(30) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+              final color = sel ? kAccent : kLabelTertiary;
+              return Expanded(
+                child: GestureDetector(
+                  key: itemKeys?[i],
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onTap(i),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        _items[i].$1,
-                        size: 20,
-                        color: sel ? kAccentAmber : kTextMuted,
-                      ),
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOutCubic,
-                        child: sel
-                            ? Padding(
-                                padding: const EdgeInsets.only(left: 6),
-                                child: Text(
-                                  _items[i].$2,
-                                  style: const TextStyle(
-                                    color: kAccentAmber,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    decoration: TextDecoration.none,
-                                  ),
-                                ),
-                              )
-                            : const SizedBox.shrink(),
+                      Icon(_items[i].$1, size: 22, color: color),
+                      const SizedBox(height: 2),
+                      Text(
+                        _items[i].$2,
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+                          decoration: TextDecoration.none,
+                        ),
                       ),
                     ],
                   ),
@@ -323,6 +302,7 @@ class _GlassNavBar extends StatelessWidget {
     );
   }
 }
+
 
 // ── Rating dialog ──
 

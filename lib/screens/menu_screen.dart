@@ -33,7 +33,9 @@ const _dayNames = <int, String>{
 const _cancelId = '__odjava__';
 
 /// Bottom padding so content doesn't hide behind floating nav bar.
-const _navBarPad = 90.0;
+/// Bottom gutter. The tab bar insets content on its own now, so this is
+/// just breathing room at the end of a scroll.
+const _navBarPad = 24.0;
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});
@@ -1558,9 +1560,6 @@ class _MealCard extends StatelessWidget {
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: color,
-        shadows: [
-          Shadow(color: color.withAlpha(120), blurRadius: 8),
-        ],
       ),
     );
   }

@@ -16,7 +16,9 @@ const _dayNames = <int, String>{
   7: 'Nedelja',
 };
 
-const _navBarPad = 90.0;
+/// Bottom gutter. The tab bar insets content on its own now, so this is
+/// just breathing room at the end of a scroll.
+const _navBarPad = 24.0;
 
 /// Color for a health score 1–10.
 Color healthColor(int score) {
@@ -520,9 +522,6 @@ class _SummaryBox extends StatelessWidget {
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
                     color: color,
-                    shadows: [
-                      Shadow(color: color.withAlpha(100), blurRadius: 10),
-                    ],
                   )),
               Text(subLabel,
                   style: TextStyle(fontSize: 13, color: color.withAlpha(150))),
@@ -573,9 +572,6 @@ class _MedalBadge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w800,
           color: color,
-          shadows: [
-            Shadow(color: color.withAlpha(150), blurRadius: 4),
-          ],
         ),
       ),
     );

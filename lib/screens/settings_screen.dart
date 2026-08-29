@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../services/meal_structure_store.dart';
@@ -5,7 +6,9 @@ import '../services/preferences_store.dart';
 import '../theme.dart';
 import 'scheduler_debug_screen.dart';
 
-const _navBarPad = 90.0;
+/// Bottom gutter. The tab bar insets content on its own now, so this is
+/// just breathing room at the end of a scroll.
+const _navBarPad = 24.0;
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onLogout;
@@ -301,24 +304,21 @@ class SettingsScreenState extends State<SettingsScreen> {
   }) {
     final hasAny = keywords.isNotEmpty || autoKeywords.isNotEmpty;
 
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // iOS puts the section label outside the group, in muted uppercase —
+        // the colour belongs to the content, not the heading.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kSp16, 0, kSp16, kSp8),
+          child: Text(title.toUpperCase(),
+              style: kFootnote.copyWith(letterSpacing: 0.5)),
+        ),
+        GlassCard(
+      padding: const EdgeInsets.all(kSp16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
-            ],
-          ),
-          const SizedBox(height: 10),
-
           if (!hasAny)
             const Padding(
               padding: EdgeInsets.only(bottom: 8),
@@ -366,44 +366,41 @@ class SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton.filled(
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size.square(32),
                 onPressed: onAdd,
-                icon: const Icon(Icons.add, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor: color.withAlpha(40),
-                  foregroundColor: color,
-                ),
+                child: Icon(CupertinoIcons.add_circled_solid,
+                    size: 28, color: color),
               ),
             ],
           ),
         ],
       ),
+        ),
+      ],
     );
   }
 
   // ── Ranking section ──
 
   Widget _buildRankingSection() {
-    return GlassCard(
-      padding: const EdgeInsets.all(16),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kSp16, 0, kSp16, kSp8),
+          child: Text('VRSTNI RED MENIJEV',
+              style: kFootnote.copyWith(letterSpacing: 0.5)),
+        ),
+        GlassCard(
+      padding: const EdgeInsets.all(kSp16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.format_list_numbered, size: 18, color: kAccentYellow),
-              SizedBox(width: 8),
-              Text('Vrstni red menijev',
-                  style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: kAccentYellow)),
-            ],
-          ),
-          const SizedBox(height: 4),
           const Text('Drži in povleci za prerazporeditev',
-              style: TextStyle(fontSize: 12, color: kTextMuted)),
-          const SizedBox(height: 10),
+              style: kCaption),
+          const SizedBox(height: kSp12),
 
           ReorderableListView.builder(
             shrinkWrap: true,
@@ -415,14 +412,13 @@ class SettingsScreenState extends State<SettingsScreen> {
                 animation: animation,
                 builder: (context, child) => Container(
                   decoration: BoxDecoration(
-                    color: kAccentYellow.withAlpha(15),
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: kAccentYellow.withAlpha(60), width: 1),
-                    boxShadow: [
+                    color: kBgElevated2,
+                    borderRadius: BorderRadius.circular(kRadiusCard),
+                    boxShadow: const [
                       BoxShadow(
-                        color: kAccentYellow.withAlpha(40),
-                        blurRadius: 12,
+                        color: Color(0x66000000),
+                        blurRadius: 16,
+                        offset: Offset(0, 4),
                       ),
                     ],
                   ),
@@ -443,6 +439,8 @@ class SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+        ),
+      ],
     );
   }
 }
@@ -478,9 +476,6 @@ class _RankingTile extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: color,
-                shadows: [
-                  Shadow(color: color.withAlpha(100), blurRadius: 6),
-                ],
               ),
             ),
           ),
@@ -521,29 +516,34 @@ class _GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Auto-derived words read one step quieter than ones typed by hand,
+    // which is the only distinction needed — the old sparkle icon was noise.
     return Container(
-      padding: const EdgeInsets.only(left: 10, right: 4, top: 4, bottom: 4),
+      padding: const EdgeInsets.only(
+          left: kSp12, right: kSp4, top: kSp4, bottom: kSp4),
       decoration: BoxDecoration(
-        color: color.withAlpha(15),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withAlpha(50), width: 0.5),
+        color: muted
+            ? kBgElevated2
+            : color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[
-            Icon(icon, size: 13, color: color.withAlpha(180)),
-            const SizedBox(width: 4),
-          ],
           Text(label,
               style: TextStyle(
-                fontSize: 13,
-                color: muted ? kTextSecondary : kTextPrimary,
+                fontSize: 15,
+                color: muted ? kLabelSecondary : kLabel,
               )),
-          const SizedBox(width: 2),
+          const SizedBox(width: kSp2),
           GestureDetector(
             onTap: onDelete,
-            child: Icon(Icons.close, size: 15, color: color.withAlpha(150)),
+            behavior: HitTestBehavior.opaque,
+            child: const Padding(
+              padding: EdgeInsets.all(kSp4),
+              child: Icon(CupertinoIcons.xmark,
+                  size: 11, color: kLabelTertiary),
+            ),
           ),
         ],
       ),
