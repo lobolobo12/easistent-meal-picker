@@ -1,5 +1,45 @@
 {
   "liked_keywords": [],
   "disliked_keywords": [],
-  "menu_type_ranking": []
+  "auto_liked_keywords": [
+    "navihanček",
+    "velika",
+    "štručki",
+    "beli",
+    "kmečki",
+    "panceta",
+    "kuhana"
+  ],
+  "auto_disliked_keywords": [
+    "šunka",
+    "ričet",
+    "korenčkom",
+    "mineštra",
+    "sadje",
+    "presno",
+    "polenta",
+    "kuhan",
+    "zelenjavo",
+    "pira",
+    "veganski",
+    "semeni",
+    "sončničnimi",
+    "korenčkov",
+    "sezamova",
+    "paprika",
+    "ogrska",
+    "žemlja",
+    "rižota",
+    "puranja"
+  ],
+  "menu_type_ranking": [
+    "Meni 5 (XXL +0,70€)",
+    "Meni 3 (veg)",
+    "Meni 1",
+    "Meni 2",
+    "Meni 4 (fit)",
+    "Meni 6 (vegan)",
+    "Meni 7 (mesni topli)",
+    "Meni 8 (vegi topli)"
+  ]
 }
