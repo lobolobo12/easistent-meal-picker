@@ -42,11 +42,18 @@ if [ -n "$profile" ]; then
 fi
 
 # ── Is the phone reachable? ──
-if ! xcrun devicectl list devices 2>/dev/null | grep -q "$DEVICE_ID.*connected"; then
-  say "WAIT: iPhone not reachable — will retry on the next run"
-  osascript -e 'display notification "Plug in the iPhone so the meal picker can be renewed." with title "Meal Picker expires soon"' 2>/dev/null
+#
+# Do not pattern-match the State column. Over Wi-Fi an idle device reads
+# "available (paired)" and only flips to "connected" once something has woken
+# the tunnel, so grepping for "connected" skips a perfectly reachable phone.
+# Probing establishes the tunnel, which is the only honest test of whether an
+# install would actually succeed.
+if ! xcrun devicectl device info details --device "$DEVICE_ID" >/dev/null 2>&1; then
+  say "WAIT: iPhone not reachable - will retry on the next run"
+  osascript -e 'display notification "Connect the iPhone (same Wi-Fi, or cable) so the meal picker can be renewed." with title "Meal Picker expires soon"' 2>/dev/null
   exit 0
 fi
+say "iPhone reachable"
 
 # ── Rebuild with a fresh profile and install over the existing app ──
 say "renewing…"
