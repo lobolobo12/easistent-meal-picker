@@ -14,6 +14,7 @@
 set -uo pipefail
 
 DEVICE_ID="F3ABE99B-E336-50C5-9428-C691BA0B202B"
+BUNDLE_ID="com.easistent.mealpicker"
 PROJECT="/Users/lovrobor/meal-picker"
 RENEW_WITHIN_DAYS=3
 LOG="$PROJECT/build/refresh.log"
@@ -55,8 +56,22 @@ if ! xcrun devicectl device info details --device "$DEVICE_ID" >/dev/null 2>&1; 
 fi
 say "iPhone reachable"
 
+# ── Force a genuinely new profile ──
+#
+# Rebuilding alone is not enough: Xcode reuses a profile that is still valid,
+# so the expiry does not move and the app dies anyway. The profile is dated
+# from its creation, so deleting it makes Xcode mint one with a full 7 days.
+# Only profiles for this app are removed, never the whole store.
+for prof in ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision; do
+  [ -e "$prof" ] || continue
+  if security cms -D -i "$prof" 2>/dev/null | grep -q "$BUNDLE_ID"; then
+    rm -f "$prof"
+    say "removed stale profile $(basename "$prof")"
+  fi
+done
+
 # ── Rebuild with a fresh profile and install over the existing app ──
-say "renewing…"
+say "renewing..."
 if ! flutter build ios --release >> "$LOG" 2>&1; then
   say "FAIL: flutter build"
   osascript -e 'display notification "Rebuild failed — see build/refresh.log" with title "Meal Picker renewal failed"' 2>/dev/null
@@ -65,7 +80,9 @@ fi
 
 if xcrun devicectl device install app --device "$DEVICE_ID" \
       build/ios/iphoneos/Runner.app >> "$LOG" 2>&1; then
-  say "OK: reinstalled, 7 more days"
+  newp=$(ls -t ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | head -1)
+  newexp=$(security cms -D -i "$newp" 2>/dev/null | plutil -extract ExpirationDate raw -o - - 2>/dev/null)
+  say "OK: reinstalled, now expires $newexp"
   osascript -e 'display notification "Renewed for another 7 days." with title "Meal Picker"' 2>/dev/null
 else
   say "FAIL: install"
