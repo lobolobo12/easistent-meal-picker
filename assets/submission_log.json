@@ -1,0 +1,82 @@
+[
+  {
+    "date": "2026-05-05",
+    "menuName": "Meni 5 (XXL +0,70€)",
+    "menuId": "71592",
+    "description": "dve hrenovki v beli štručki (pšenica), sok",
+    "submittedAt": "2026-04-27T16:05:19.535797",
+    "aiPickMenuName": "Meni 1"
+  },
+  {
+    "date": "2026-05-06",
+    "menuName": "Meni 5 (XXL +0,70€)",
+    "menuId": "71592",
+    "description": "pleskavica v lepinji, sveža zelenjava (pšenica), sok",
+    "submittedAt": "2026-04-27T16:05:21.820713",
+    "aiPickMenuName": "Meni 1"
+  },
+  {
+    "date": "2026-05-07",
+    "menuName": "Odjava",
+    "menuId": "__odjava__",
+    "description": "Odjava od Meni 1",
+    "submittedAt": "2026-04-27T16:05:22.808206",
+    "aiPickMenuName": "Meni 1"
+  },
+  {
+    "date": "2026-05-25",
+    "menuName": "Odjava",
+    "menuId": "__odjava__",
+    "description": "Odjava od Meni 1",
+    "submittedAt": "2026-05-18T16:01:19.792532",
+    "aiPickMenuName": "Meni 5 (XXL +0,70€)"
+  },
+  {
+    "date": "2026-05-26",
+    "menuName": "Meni 5 (XXL +0,70€)",
+    "menuId": "71592",
+    "description": "velika lepinja, hišna omaka, dunajski zrezek iz svinjskega fileja, solata (pšenica, jajca, gorčična semena, soja, sledi oreščkov), sok",
+    "submittedAt": "2026-05-18T16:01:21.978724",
+    "aiPickMenuName": "Meni 7 (mesni topli)"
+  },
+  {
+    "date": "2026-05-27",
+    "menuName": "Meni 3 (veg)",
+    "menuId": "71576",
+    "description": "čokoladni navihanček in marelični navihanček (pšenica, mlečni izdelek, ki vsebuje laktozo, jajca), sok",
+    "submittedAt": "2026-05-18T16:01:24.084639",
+    "aiPickMenuName": "Meni 3 (veg)"
+  },
+  {
+    "date": "2026-05-28",
+    "menuName": "Odjava",
+    "menuId": "__odjava__",
+    "description": "Odjava od Meni 1",
+    "submittedAt": "2026-05-18T16:01:25.022666",
+    "aiPickMenuName": "Meni 3 (veg)"
+  },
+  {
+    "date": "2026-05-25",
+    "menuName": "Meni 5 (XXL +0,70€)",
+    "menuId": "71592",
+    "description": "velika štručka, kmečki pršut, sir, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+    "submittedAt": "2026-05-18T16:01:31.504338",
+    "aiPickMenuName": "Meni 5 (XXL +0,70€)"
+  },
+  {
+    "date": "2026-05-28",
+    "menuName": "Meni 5 (XXL +0,70€)",
+    "menuId": "71592",
+    "description": "velika lepinja, sirni namaz, kraška panceta, sveža zelenjava (pšenica, mlečni izdelek, ki vsebuje laktozo), sok",
+    "submittedAt": "2026-05-18T16:01:32.476681",
+    "aiPickMenuName": "Meni 5 (XXL +0,70€)"
+  },
+  {
+    "date": "2026-05-29",
+    "menuName": "Meni 5 (XXL +0,70€)",
+    "menuId": "71592",
+    "description": "kuhana klobasa v štručki, gorčica (pšenica, gorčična semena), sok",
+    "submittedAt": "2026-05-18T16:01:33.449444",
+    "aiPickMenuName": "Meni 5 (XXL +0,70€)"
+  }
+]
