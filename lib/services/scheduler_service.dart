@@ -72,12 +72,29 @@ const _androidNotifDetails = AndroidNotificationDetails(
   importance: Importance.high,
   priority: Priority.high,
 );
-const _darwinInitSettings = DarwinInitializationSettings(
+/// Category for the Monday submit prompt. The action opens the app and runs
+/// the submit immediately, so accepting is one tap from the lock screen.
+const _submitCategoryId = 'meal_submit';
+const _submitActionId = 'submit_now';
+
+final _submitCategory = DarwinNotificationCategory(
+  _submitCategoryId,
+  actions: [
+    DarwinNotificationAction.plain(
+      _submitActionId,
+      'Oddaj zdaj',
+      options: {DarwinNotificationActionOption.foreground},
+    ),
+  ],
+);
+
+final _darwinInitSettings = DarwinInitializationSettings(
   // Permissions are requested explicitly in requestNotificationPermission()
   // so the prompt appears during onboarding, not at cold start.
   requestAlertPermission: false,
   requestBadgePermission: false,
   requestSoundPermission: false,
+  notificationCategories: [_submitCategory],
 );
 const _darwinNotifDetails = DarwinNotificationDetails(
   presentAlert: true,
@@ -87,6 +104,16 @@ const _darwinNotifDetails = DarwinNotificationDetails(
 const _notifDetails = NotificationDetails(
   android: _androidNotifDetails,
   iOS: _darwinNotifDetails,
+);
+
+const _submitNotifDetails = NotificationDetails(
+  android: _androidNotifDetails,
+  iOS: DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+    categoryIdentifier: _submitCategoryId,
+  ),
 );
 
 /// Ensure the plugin + channel are initialized in the current isolate.
@@ -101,11 +128,17 @@ Future<FlutterLocalNotificationsPlugin> _ensurePlugin() async {
       await android?.createNotificationChannel(_androidChannel);
     }
     await _notificationsPlugin.initialize(
-      const InitializationSettings(
+      InitializationSettings(
         android: _androidInitSettings,
         iOS: _darwinInitSettings,
       ),
       onDidReceiveNotificationResponse: (response) {
+        // Tapping the body and tapping "Oddaj zdaj" both arrive here; the
+        // action id distinguishes them, and either means "submit".
+        if (response.actionId == _submitActionId) {
+          onNotificationTap?.call('auto_submit');
+          return;
+        }
         onNotificationTap?.call(response.payload);
       },
     );
@@ -342,14 +375,17 @@ Future<void> scheduleWeeklyTasks() async {
 /// each alarm becomes a local notification and the work it would have done
 /// happens on next app launch via [runForegroundCatchUp].
 Future<void> _scheduleIosTasks(tz.TZDateTime now) async {
-  // Monday 18:00 — Android submits here; iOS asks the user to open the app.
+  // Monday 17:45. Android submits by itself at 18:00; iOS cannot, so this
+  // asks for one tap instead — early enough to leave slack before the
+  // deadline, and carrying an "Oddaj zdaj" action so it can be accepted
+  // straight from the lock screen without hunting for the app.
   try {
     await _notificationsPlugin.zonedSchedule(
       _autoSubmitPromptNotifId,
-      'Cas za oddajo menija',
-      'Odpri aplikacijo -- AI bo oddal izbire za naslednji teden',
-      _nextWeekday(now, DateTime.monday, 18, 0),
-      _notifDetails,
+      'Oddaja menija za naslednji teden',
+      'AI je izbral tvoje malice. Tapni za potrditev.',
+      _nextWeekday(now, DateTime.monday, 17, 45),
+      _submitNotifDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
       uiLocalNotificationDateInterpretation:
