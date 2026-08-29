@@ -32,6 +32,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
   String? _error;
 
   final Map<String, List<String>> _pool = {};
+  /// Identity -> fullest label seen, so rounds still read "Meni 3 (veg)".
+  final Map<String, String> _poolDisplay = {};
   List<String> _menuTypes = [];
 
   List<_QuizOption> _currentOptions = [];
@@ -77,12 +79,20 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   void _buildPool() {
     _pool.clear();
+    _poolDisplay.clear();
     final seen = <String, Set<String>>{};
     for (final day in _trainingData) {
       for (final opt in (day as Map)['options'] as List) {
-        final name = (opt as Map)['menu_name'] as String;
+        final raw = (opt as Map)['menu_name'] as String;
+        // Pool on identity, not on the label. Last year's
+        // "Meni 5 (XXL +0,70€)" and this year's "Meni 5 (XXL+0,80 EUR)" are
+        // the same menu, and keying on the raw string offered both in the
+        // same round.
+        final name = normalizeMenuName(raw);
         final desc = (opt['description'] as String).trim();
         if (desc.isEmpty) continue;
+        final prev = _poolDisplay[name];
+        if (prev == null || raw.length > prev.length) _poolDisplay[name] = raw;
         seen.putIfAbsent(name, () => {});
         if (seen[name]!.add(desc)) {
           _pool.putIfAbsent(name, () => []).add(desc);
@@ -107,8 +117,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
     _currentOptions = [
       for (final name in _menuTypes)
         if (_pool[name]!.isNotEmpty)
-          _QuizOption(
-              name, _pool[name]![_random.nextInt(_pool[name]!.length)]),
+          _QuizOption(_poolDisplay[name] ?? name,
+              _pool[name]![_random.nextInt(_pool[name]!.length)]),
     ];
   }
 

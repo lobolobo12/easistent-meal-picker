@@ -42,6 +42,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // Quiz
   final _random = Random();
   final Map<String, List<String>> _pool = {};
+  /// Identity -> fullest label seen, so rounds still read "Meni 3 (veg)".
+  final Map<String, String> _poolDisplay = {};
   List<String> _menuTypes = [];
   List<_QuizOption> _currentOptions = [];
   int _quizRound = 0;
@@ -193,14 +195,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ── Quiz ──
 
+  /// Real meal days already in the model, quiz answers excluded.
+  int get _knownDays => _trainingData
+      .where((d) =>
+          d is Map && d['date'] is String && !(d['date'] as String).startsWith('quiz'))
+      .length;
+
   void _buildPool() {
     _pool.clear();
+    _poolDisplay.clear();
     final seen = <String, Set<String>>{};
     for (final day in _trainingData) {
       for (final opt in (day as Map)['options'] as List) {
-        final name = (opt as Map)['menu_name'] as String;
+        final raw = (opt as Map)['menu_name'] as String;
+        // Pool on identity, not on the label. Last year's
+        // "Meni 5 (XXL +0,70€)" and this year's "Meni 5 (XXL+0,80 EUR)" are
+        // the same menu, and keying on the raw string offered both in the
+        // same round.
+        final name = normalizeMenuName(raw);
         final desc = (opt['description'] as String).trim();
         if (desc.isEmpty) continue;
+        final prev = _poolDisplay[name];
+        if (prev == null || raw.length > prev.length) _poolDisplay[name] = raw;
         seen.putIfAbsent(name, () => {});
         if (seen[name]!.add(desc)) {
           _pool.putIfAbsent(name, () => []).add(desc);
@@ -217,8 +233,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _currentOptions = [
       for (final name in _menuTypes)
         if (_pool[name]!.isNotEmpty)
-          _QuizOption(
-              name, _pool[name]![_random.nextInt(_pool[name]!.length)]),
+          _QuizOption(_poolDisplay[name] ?? name,
+              _pool[name]![_random.nextInt(_pool[name]!.length)]),
     ];
   }
 
@@ -562,15 +578,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const Icon(Icons.fitness_center,
                   size: 20, color: kAccentMauve),
               const SizedBox(width: 8),
-              Text('Runda $_quizRound / $_maxQuizRounds',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: kTextPrimary)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Runda $_quizRound / $_maxQuizRounds',
+                      style: kHeadline),
+                  // The quiz only adds to a model that already carries the
+                  // migrated history, so say so — otherwise skipping looks
+                  // like giving something up.
+                  Text(
+                    _knownDays > 0
+                        ? 'Model že pozna $_knownDays dni'
+                        : 'Kviz je neobvezen',
+                    style: kFootnote,
+                  ),
+                ],
+              ),
               const Spacer(),
               OutlinedButton(
                 onPressed: _isAnimating ? null : _finishOnboarding,
-                child: const Text('Končaj'),
+                child: const Text('Preskoči'),
               ),
             ],
           ),

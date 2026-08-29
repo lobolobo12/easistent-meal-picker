@@ -34,8 +34,18 @@ List<String> tokenize(String description) {
   ];
 }
 
-String normalizeMenuName(String name) =>
-    name.trim().replaceAll(RegExp(r'\s+'), ' ');
+/// Canonical identity for a menu, used as a model key — never for display.
+///
+/// The descriptive suffix changes between years: this school renamed
+/// "Meni 5 (XXL +0,70€)" to "Meni 5 (XXL+0,80 EUR)" over the summer. Keying
+/// on the full string would strand every preference learned about that menu
+/// under a name the site no longer serves, and would show it twice wherever
+/// the two are pooled together. Identity is the part before the bracket.
+String normalizeMenuName(String name) {
+  final base = name.split('(').first.trim().replaceAll(RegExp(r'\s+'), ' ');
+  if (base.isNotEmpty) return base;
+  return name.trim().replaceAll(RegExp(r'\s+'), ' ');
+}
 
 /// Hybrid meal predictor using keyword scoring, menu type frequency,
 /// and manual preference overrides with base-rate correction.

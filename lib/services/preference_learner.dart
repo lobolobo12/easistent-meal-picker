@@ -82,10 +82,16 @@ Map<String, dynamic> deriveAutoPreferences({
 
   final typeChosen = <String, int>{};
   final typeTotal = <String, int>{};
+  final displayName = <String, String>{};
 
   for (final day in trainingData) {
     for (final opt in (day as Map)['options'] as List) {
-      final name = normalizeMenuName((opt as Map)['menu_name'] as String);
+      final raw = (opt as Map)['menu_name'] as String;
+      final name = normalizeMenuName(raw);
+      // Remember the fullest label seen for this menu so Settings can still
+      // show "(veg)" / "(fit)" rather than a bare "Meni 3".
+      final prev = displayName[name];
+      if (prev == null || raw.length > prev.length) displayName[name] = raw;
       typeTotal[name] = (typeTotal[name] ?? 0) + 1;
       if (opt['chosen'] as bool) {
         typeChosen[name] = (typeChosen[name] ?? 0) + 1;
@@ -107,7 +113,9 @@ Map<String, dynamic> deriveAutoPreferences({
     'disliked_keywords': manualDisliked,
     'auto_liked_keywords': autoLiked,
     'auto_disliked_keywords': autoDisliked,
-    'menu_type_ranking': rankedTypes,
+    'menu_type_ranking': [
+      for (final t in rankedTypes) displayName[t] ?? t,
+    ],
   };
 }
 
