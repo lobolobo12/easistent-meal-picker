@@ -111,6 +111,31 @@ flutter build apk --release    # Output: build/app/outputs/flutter-apk/app-relea
 flutter run                    # Debug on connected device
 ```
 
+### iOS (branch `iphone`)
+
+```bash
+cd ios && pod install && cd ..
+flutter build ios --release    # Signed build, needs an Apple ID team in Xcode
+./scripts/build_ipa.sh         # Unsigned build/MealPicker.ipa for SideStore/AltStore
+```
+
+iOS differences from Android, all in `scheduler_service.dart`:
+
+- `android_alarm_manager_plus` has no iOS implementation and iOS cannot run
+  Dart at a wall-clock time in the background. The alarm block is Android-only;
+  iOS schedules the Monday 18:00 prompt and the 13:00 rating reminders as
+  local notifications, and `runForegroundCatchUp()` does the real work on app
+  launch and resume (wired to `WidgetsBindingObserver` in `main.dart`).
+- `_handleAutoSubmit(relaxedGate: true)` widens the Monday 17:00-20:00 gate to
+  Monday-Friday for that catch-up. The weekly marker file still limits it to
+  one submit per week.
+- The home widget is an Android AppWidget with no WidgetKit extension, so
+  `updateHomeWidget` and `setAppGroupId` are guarded to Android. Keep it that
+  way: adding an iOS extension would consume a second App ID, and a free
+  Apple ID allows only 3 sideloaded apps and 10 App IDs per 7 days.
+- Notifications need both Android and Darwin settings — iOS reminders are
+  silent without `DarwinInitializationSettings` / `DarwinNotificationDetails`.
+
 ## CLI Test Scripts (bin/)
 
 ```bash
