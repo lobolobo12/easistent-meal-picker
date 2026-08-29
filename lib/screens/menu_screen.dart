@@ -1,4 +1,3 @@
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
@@ -804,46 +803,19 @@ class MenuScreenState extends State<MenuScreen> {
       builder: (ctx) => Dialog(
         backgroundColor: Colors.transparent,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              padding: const EdgeInsets.all(24),
+          borderRadius: BorderRadius.circular(kRadiusSheet),
+          child: Container(
+              padding: const EdgeInsets.all(kSp24),
               decoration: BoxDecoration(
-                color: const Color(0x30FFFFFF),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: kGlassBorder, width: 0.5),
+                color: kBgElevated2,
+                borderRadius: BorderRadius.circular(kRadiusSheet),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.event_busy,
-                          size: 20, color: kAccentRed),
-                      const SizedBox(width: 8),
-                      const Text('Odsotnost',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: kTextPrimary)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 1,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          kAccentRed.withAlpha(0),
-                          kAccentRed.withAlpha(80),
-                          kAccentRed.withAlpha(0),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+                  const Text('Odsotnost', style: kTitle3),
+                  const SizedBox(height: kSp12),
                   Text(
                       'Odjavi malico za vse dni od $fromStr do $toStr?\n\n'
                       'Vse narocene malice bodo odpovedane.',
@@ -868,8 +840,7 @@ class MenuScreenState extends State<MenuScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
+        ),
         ),
       ),
     );
@@ -1344,20 +1315,10 @@ class _DaySection extends StatelessWidget {
             ],
           ),
         ),
-        // Gradient line separator
-        Container(
-          height: 1,
-          margin: const EdgeInsets.only(bottom: 6),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                barColor.withAlpha(0),
-                barColor.withAlpha(90),
-                barColor.withAlpha(0),
-              ],
-            ),
-          ),
-        ),
+        // Hairline separator, iOS-style
+        const Divider(
+            height: 0.5, thickness: 0.5, color: kSeparator),
+        const SizedBox(height: kSp8),
         // Meal cards
         ...options.asMap().entries.map((e) {
           final idx = e.key;

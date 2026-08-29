@@ -15,7 +15,8 @@ import '../models/meal_option.dart';
 /// 5. Use these as headers for subsequent requests
 class EAsistentClient {
   static const _loginUrl = 'https://www.easistent.com/p/ajax_prijava';
-  static const _mealPageUrl = 'https://www.easistent.com/prehrana';
+  // /prehrana now 307s here; naming the real target saves a round-trip.
+  static const _mealPageUrl = 'https://www.easistent.com/prehrana/dijaki';
   static const _mealListUrl =
       'https://www.easistent.com/dijaki/ajax_prehrana_obroki_seznam';
   static const _mealSelectUrl =
@@ -33,7 +34,11 @@ class EAsistentClient {
   // Manual cookie store keyed by domain
   final Map<String, List<Cookie>> _cookies = {};
 
-  bool get isLoggedIn => accessToken != null;
+  bool _loggedIn = false;
+
+  /// True once the session cookies are established. Deliberately not tied to
+  /// [accessToken]: eAsistent no longer exposes it (see [login]).
+  bool get isLoggedIn => _loggedIn;
 
   EAsistentClient({required this.username, required this.password}) {
     _httpClient = HttpClient()
@@ -54,7 +59,19 @@ class EAsistentClient {
     };
 
     final loginResp = await _post(_loginUrl, loginBody);
-    final loginJson = jsonDecode(loginResp.body);
+    final dynamic loginJson;
+    try {
+      loginJson = jsonDecode(loginResp.body);
+    } on FormatException catch (e) {
+      // Say which step failed and what came back. A bare FormatException
+      // here is indistinguishable from the ses-cookie one below.
+      final head = loginResp.body.length > 120
+          ? '${loginResp.body.substring(0, 120)}...'
+          : loginResp.body;
+      throw Exception(
+          'Login failed: /ajax_prijava did not return JSON '
+          '(HTTP ${loginResp.statusCode}). Body starts: "$head" [$e]');
+    }
 
     if (loginJson['errfields'] != null &&
         (loginJson['errfields'] as List).isNotEmpty) {
@@ -76,29 +93,35 @@ class EAsistentClient {
           orElse: () => null,
         );
 
-    if (sesCookie == null) {
-      throw Exception('Login failed: no ses cookie received');
+    // The ses cookie used to be URL-encoded JSON carrying accessToken and
+    // activeChildId. eAsistent now issues an opaque, encrypted "v1." token,
+    // so those fields cannot be read out of it any more. The meal endpoints
+    // authenticate from the easistent_session / easistent_auth_token cookies
+    // alone — verified against the live site — so treat the tokens as a
+    // bonus, not a requirement. Parsing is still attempted so that an
+    // account still being served the old format keeps sending the headers.
+    if (sesCookie != null) {
+      try {
+        final sesJson = jsonDecode(Uri.decodeComponent(sesCookie.value));
+        accessToken = sesJson['accessToken'] as String?;
+        childId = sesJson['activeChildId']?.toString();
+        refreshToken = sesJson['refreshToken'] as String?;
+      } on FormatException {
+        // Opaque token — expected on current eAsistent. Cookies carry the
+        // session, so there is nothing to recover here.
+      }
     }
 
-    // ses cookie value is URL-encoded JSON
-    final sesJson = jsonDecode(Uri.decodeComponent(sesCookie.value));
-    accessToken = sesJson['accessToken'] as String?;
-    childId = sesJson['activeChildId']?.toString();
-    refreshToken = sesJson['refreshToken'] as String?;
-
-    if (accessToken == null || childId == null) {
-      throw Exception(
-          'Login failed: missing tokens in ses cookie');
-    }
-
-    // 4. Set auth headers for future requests
+    // 4. Set headers for future requests. The auth pair is only sent when the
+    // old-format cookie actually yielded them.
     _headers.addAll({
-      'Authorization': accessToken!,
-      'X-Child-Id': childId!,
+      if (accessToken != null) 'Authorization': accessToken!,
+      if (childId != null) 'X-Child-Id': childId!,
       'X-Client-Version': '13',
       'X-Client-Platform': 'web',
       'X-Requested-With': 'XMLHttpRequest',
     });
+    _loggedIn = true;
   }
 
   /// Clear session state and re-login with existing credentials.
@@ -106,6 +129,7 @@ class EAsistentClient {
     accessToken = null;
     childId = null;
     refreshToken = null;
+    _loggedIn = false;
     _headers.clear();
     _cookies.clear();
     await login();

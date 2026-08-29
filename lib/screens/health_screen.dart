@@ -282,31 +282,11 @@ class _HealthScreenState extends State<HealthScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
-            children: [
-              Icon(Icons.analytics_outlined, size: 18, color: kAccentGreen),
-              SizedBox(width: 8),
-              Text('Tedenski pregled',
-                  style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: kTextPrimary)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  kAccentGreen.withAlpha(0),
-                  kAccentGreen.withAlpha(80),
-                  kAccentGreen.withAlpha(0),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
+          // Muted uppercase header, no icon and no gradient rule — matches
+          // Nastavitve and Statistika.
+          Text('TEDENSKI PREGLED',
+              style: kFootnote.copyWith(letterSpacing: 0.5)),
+          const SizedBox(height: kSp12),
           Row(
             children: [
               Expanded(
