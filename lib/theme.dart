@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -17,13 +19,32 @@ import 'package:flutter/material.dart';
 // and selected/nested content one step lighter again. Depth comes from these
 // steps, not from blur or glow.
 
-const kBgBase = Color(0xFF000000); // systemGroupedBackground
-const kBgElevated = Color(0xFF1C1C1E); // secondarySystemGroupedBackground
-const kBgElevated2 = Color(0xFF2C2C2E); // tertiarySystemGroupedBackground
-const kBgElevated3 = Color(0xFF3A3A3C);
+const kBgBase = Color(0xFF0D0B10); // deep warm ground under the bed
+const kBgElevated = Color(0x16FFFFFF); // glass fill — translucent, not solid
+const kBgElevated2 = Color(0x24FFFFFF); // thicker glass (sheets, dialogs)
+const kBgElevated3 = Color(0x33FFFFFF);
 
-const kSeparator = Color(0xFF38383A); // opaque separator
-const kSeparatorThin = Color(0x5C545458); // non-opaque separator
+const kSeparator = Color(0x24FFFFFF); // hairline on glass
+const kSeparatorThin = Color(0x1AFFFFFF);
+
+// ── Liquid Glass material ──
+//
+// iOS 26's glass is translucency + saturation + a specular top edge. The
+// edge is what makes a panel read as a physical layer rather than a tinted
+// rectangle, so every glass surface carries one.
+
+const kGlassTop = Color(0x22FFFFFF); // fill, top of the gradient
+const kGlassBottom = Color(0x0FFFFFFF); // fill, bottom
+const kGlassEdge = Color(0x2BFFFFFF); // hairline border
+const kSpecular = Color(0x57FFFFFF); // the bright top edge
+
+/// Colours of the bed the glass floats over. Blurred into soft fields, these
+/// are what the panels refract — over flat black, glass has nothing to work
+/// with and collapses into grey.
+const kBedAmber = Color(0xFFC2622A);
+const kBedPlum = Color(0xFF7A3F9E);
+const kBedTeal = Color(0xFF1D6F7A);
+const kBedRust = Color(0xFFB8452F);
 
 // ── Labels ──
 
@@ -37,7 +58,7 @@ const kLabelQuaternary = Color(0x2DEBEBF5); // 18%
 const kBlue = Color(0xFF0A84FF);
 const kGreen = Color(0xFF30D158);
 const kIndigo = Color(0xFF5E5CE6);
-const kOrange = Color(0xFFFF9F0A);
+const kOrange = Color(0xFFFFB454); // warm amber, not iOS safety-orange
 const kPink = Color(0xFFFF375F);
 const kPurple = Color(0xFFBF5AF2);
 const kRed = Color(0xFFFF453A);
@@ -120,12 +141,13 @@ const kAccentRed = kRed;
 const kAccentMauve = kIndigo;
 const kAccentYellow = kYellow;
 
-/// Flat ground. Kept as a gradient so existing `BoxDecoration(gradient:)`
-/// call sites still work, but iOS uses a solid grouped background.
+/// Kept for existing `BoxDecoration(gradient:)` call sites. The real ground is
+/// painted by [LiquidBed] behind the whole shell, so this stays transparent
+/// rather than covering it.
 const kBgGradient = LinearGradient(
   begin: Alignment.topCenter,
   end: Alignment.bottomCenter,
-  colors: [kBgBase, kBgBase],
+  colors: [Colors.transparent, Colors.transparent],
 );
 
 // ── Menu-type → accent ──
@@ -146,6 +168,65 @@ Color menuColor(String menuName) {
     return _menuPalette[(num - 1) % _menuPalette.length];
   }
   return kAccent;
+}
+
+// ── The bed ──
+
+/// The colour field every glass surface floats over.
+///
+/// Blurred once here rather than per-surface: with a soft bed underneath,
+/// the panels above can be cheap translucent fills and still read as glass.
+/// That matters — a scrolling list of cards each running its own
+/// BackdropFilter is expensive, and looks near-identical.
+class LiquidBed extends StatelessWidget {
+  final Widget child;
+
+  const LiquidBed({super.key, required this.child});
+
+  static Widget _blob(double? l, double? t, double? r, double? b, double size,
+      Color color) {
+    return Positioned(
+      left: l,
+      top: t,
+      right: r,
+      bottom: b,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: ColoredBox(color: kBgBase)),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
+              child: Stack(
+                children: [
+                  _blob(-80, -70, null, null, 340, kBedAmber),
+                  _blob(null, 130, -90, null, 300, kBedPlum),
+                  _blob(-50, null, null, 120, 320, kBedTeal),
+                  _blob(null, null, -70, -90, 260, kBedRust),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Scrim: without it the bed overpowers the type and the glass has no
+        // contrast to sit against.
+        const Positioned.fill(
+          child: IgnorePointer(child: ColoredBox(color: Color(0xA60A080C))),
+        ),
+        child,
+      ],
+    );
+  }
 }
 
 // ── Inset grouped list ──
@@ -194,8 +275,16 @@ class InsetGroup extends StatelessWidget {
             ),
           ClipRRect(
             borderRadius: BorderRadius.circular(kRadiusRow),
-            child: ColoredBox(
-              color: kBgElevated,
+            child: DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [kGlassTop, kGlassBottom],
+                ),
+                border: Border.fromBorderSide(
+                    BorderSide(color: kGlassEdge, width: 0.5)),
+              ),
               child: Column(children: rows),
             ),
           ),
@@ -345,20 +434,67 @@ class GlassCard extends StatelessWidget {
     final br = BorderRadius.circular(radius);
     final accent = borderColor ?? kAccent;
 
+    final decoration = selected
+        ? BoxDecoration(
+            borderRadius: br,
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                accent.withValues(alpha: 0.30),
+                accent.withValues(alpha: 0.16),
+              ],
+            ),
+            border: Border.all(color: accent.withValues(alpha: 0.58)),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.30),
+                blurRadius: 30,
+                spreadRadius: -14,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          )
+        : BoxDecoration(
+            borderRadius: br,
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [kGlassTop, kGlassBottom],
+            ),
+            border: Border.all(color: kGlassEdge, width: 0.5),
+          );
+
     return Padding(
       padding: margin,
-      child: Material(
-        color: selected ? accent.withValues(alpha: 0.16) : kBgElevated,
-        shape: RoundedRectangleBorder(
+      child: DecoratedBox(
+        decoration: decoration,
+        child: ClipRRect(
           borderRadius: br,
-          side: selected
-              ? BorderSide(color: accent, width: 1)
-              : BorderSide.none,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(padding: padding, child: child),
+          child: Stack(
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  child: Padding(padding: padding, child: child),
+                ),
+              ),
+              // Specular edge. This single hairline is what separates a glass
+              // panel from a translucent rectangle.
+              Positioned(
+                top: 0,
+                left: radius * 0.5,
+                right: radius * 0.5,
+                child: Container(
+                  height: 0.5,
+                  color: selected
+                      ? Colors.white.withValues(alpha: 0.55)
+                      : kSpecular,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -379,14 +515,26 @@ class GlassBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: padding,
-      decoration: const BoxDecoration(
-        color: kBgBase,
-        border: Border(bottom: BorderSide(color: kSeparator, width: 0.5)),
+    // Real BackdropFilter here: a bar sits over moving content, so it has to
+    // blur what scrolls beneath it. There are only a handful of these, unlike
+    // cards, so the cost is fine.
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          width: double.infinity,
+          padding: padding,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [kGlassTop, kGlassBottom],
+            ),
+            border: Border(bottom: BorderSide(color: kGlassEdge, width: 0.5)),
+          ),
+          child: child,
+        ),
       ),
-      child: child,
     );
   }
 }
@@ -437,8 +585,8 @@ ThemeData buildAppTheme() {
     // Resolves to San Francisco on iOS — the single biggest cue that an app
     // belongs on the platform.
     typography: Typography.material2021(platform: TargetPlatform.iOS),
-    scaffoldBackgroundColor: kBgBase,
-    canvasColor: kBgBase,
+    scaffoldBackgroundColor: Colors.transparent,
+    canvasColor: Colors.transparent,
     splashFactory: NoSplash.splashFactory,
     highlightColor: kLabelQuaternary,
     colorScheme: const ColorScheme.dark(
@@ -453,7 +601,7 @@ ThemeData buildAppTheme() {
     // margin. Setting it here gives every screen the platform title without
     // converting each one to a sliver app bar.
     appBarTheme: const AppBarTheme(
-      backgroundColor: kBgBase,
+      backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       scrolledUnderElevation: 0,

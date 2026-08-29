@@ -18,7 +18,7 @@ String _stripAllergens(String desc) {
 
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
-const _navBarPad = 24.0;
+const _navBarPad = 104.0;
 
 class TrainingScreen extends StatefulWidget {
   const TrainingScreen({super.key});

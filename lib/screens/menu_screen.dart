@@ -34,7 +34,7 @@ const _cancelId = '__odjava__';
 /// Bottom padding so content doesn't hide behind floating nav bar.
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
-const _navBarPad = 24.0;
+const _navBarPad = 104.0;
 
 class MenuScreen extends StatefulWidget {
   const MenuScreen({super.key});

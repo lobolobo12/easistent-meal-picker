@@ -8,7 +8,7 @@ import 'scheduler_debug_screen.dart';
 
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
-const _navBarPad = 24.0;
+const _navBarPad = 104.0;
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onLogout;

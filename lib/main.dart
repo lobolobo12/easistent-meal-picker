@@ -97,7 +97,8 @@ class _MealPickerAppState extends State<MealPickerApp>
       title: 'eAsistent Meal Picker',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
-      home: _onboardingDone == null
+      home: LiquidBed(
+        child: _onboardingDone == null
           ? Container(
               decoration: const BoxDecoration(gradient: kBgGradient),
               child: const Center(child: CircularProgressIndicator()),
@@ -105,11 +106,12 @@ class _MealPickerAppState extends State<MealPickerApp>
           : _onboardingDone!
               ? MainShell(showTour: _showTour)
               : OnboardingScreen(
-                  onComplete: () => setState(() {
-                    _onboardingDone = true;
-                    _showTour = true;
-                  }),
-                ),
+                    onComplete: () => setState(() {
+                      _onboardingDone = true;
+                      _showTour = true;
+                    }),
+                  ),
+      ),
     );
   }
 }
@@ -198,7 +200,8 @@ class _MainShellState extends State<MainShell> {
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: kBgBase,
+          backgroundColor: Colors.transparent,
+          extendBody: true,
           body: IndexedStack(
             index: _currentIndex,
             children: [
@@ -257,16 +260,38 @@ class _TabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: kBgBase,
-        border: Border(top: BorderSide(color: kSeparator, width: 0.5)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 49,
-          child: Row(
+    // Floats over the content rather than sitting in a bar: that separation is
+    // the point of the material, and it needs a real blur because the list
+    // scrolls underneath it.
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(26),
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [kGlassTop, kGlassBottom],
+                ),
+                border: Border.all(color: kGlassEdge, width: 0.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x66000000),
+                    blurRadius: 28,
+                    spreadRadius: -12,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                height: 56,
+                child: Row(
             children: List.generate(_items.length, (i) {
               final sel = i == selectedIndex;
               final color = sel ? kAccent : kLabelTertiary;
@@ -278,15 +303,17 @@ class _TabBar extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(_items[i].$1, size: 22, color: color),
+                      Icon(_items[i].$1, size: 21, color: color),
                       const SizedBox(height: 2),
                       Text(
                         _items[i].$2,
                         maxLines: 1,
                         overflow: TextOverflow.visible,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: color,
-                          fontSize: 10,
+                          fontSize: 9,
+                          letterSpacing: -0.1,
                           fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
                           decoration: TextDecoration.none,
                         ),
@@ -296,6 +323,9 @@ class _TabBar extends StatelessWidget {
                 ),
               );
             }),
+                ),
+              ),
+            ),
           ),
         ),
       ),

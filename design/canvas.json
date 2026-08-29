@@ -1,0 +1,38 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",   "title": "A — Topla glazura",   "x": 0,    "y": 0, "w": 390, "h": 844 },
+    { "file": "Svetlo.dc.html", "title": "B — Svetla glazura",  "x": 500,  "y": 0, "w": 390, "h": 844 },
+    { "file": "Mirno.dc.html",  "title": "C — Mirna glazura",   "x": 1000, "y": 0, "w": 390, "h": 844 }
+  ],
+  "annotations": [
+    {
+      "id": "brief",
+      "x": 0,
+      "y": -190,
+      "w": 500,
+      "text": "Liquid Glass — iOS 26\n\nAll three use the same material: blurred, saturated, translucent panels with a specular top edge, floating over a coloured bed. They differ only in how loud that bed is. Real menu data from Monday 1 September."
+    },
+    {
+      "id": "note-a",
+      "x": 0,
+      "y": 900,
+      "w": 390,
+      "text": "A — Topla glazura\n\nWarm amber/plum/teal bed, saturated. The glass has plenty to refract, so it reads unmistakably as iOS 26.\n\nTradeoff: the most decorative of the three. On a screen you open twice a week that is fine; if you find it busy after a fortnight, C is the same design turned down."
+    },
+    {
+      "id": "note-b",
+      "x": 500,
+      "y": 900,
+      "w": 390,
+      "text": "B — Svetla glazura\n\nSame material inverted. Light glass is what iOS actually shows most of the day, and food reads better on a bright ground.\n\nTradeoff: no dark mode here yet, and this is a phone you'll often check in a dim corridor. It would need a dark variant built alongside, so it is the most work."
+    },
+    {
+      "id": "note-c",
+      "x": 1000,
+      "y": 900,
+      "w": 390,
+      "text": "C — Mirna glazura\n\nIdentical structure, near-monochrome bed and a sand accent instead of amber. The glass reads as depth rather than as colour.\n\nTradeoff: closest to what you have now, so it is the smallest jump — but it is also the least distinctive, and it fixes 'brutal' more than it earns 'nice'."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

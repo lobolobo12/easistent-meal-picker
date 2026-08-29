@@ -15,7 +15,7 @@ const _dayNames = <int, String>{
 
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
-const _navBarPad = 24.0;
+const _navBarPad = 104.0;
 
 class LogScreen extends StatefulWidget {
   const LogScreen({super.key});

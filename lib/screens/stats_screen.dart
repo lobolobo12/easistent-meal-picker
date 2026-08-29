@@ -24,7 +24,7 @@ const _monthNames = <int, String>{
 
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
-const _navBarPad = 24.0;
+const _navBarPad = 104.0;
 
 /// Comprehensive Slovenian stop words: prepositions, conjunctions, adjectives,
 /// articles, verbs, and other non-food filler words.

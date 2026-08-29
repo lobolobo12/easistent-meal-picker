@@ -1,0 +1,212 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: #ffb454; } a:hover { color: #ffc77e; }
+
+    .lg-root {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      width: 390px; height: 844px; position: relative; overflow: hidden;
+      background: #0d0b10; color: #fff; box-sizing: border-box;
+      isolation: isolate;
+    }
+
+    /* Content layer. Liquid Glass refracts what is behind it, so there has to
+       BE something behind it — flat black gives glass nothing to work with. */
+    .lg-bed { position: absolute; inset: -10%; z-index: 0; filter: saturate(125%); }
+    .lg-blob { position: absolute; border-radius: 50%; filter: blur(58px); }
+
+    /* One glass recipe, used at three strengths. Blur + saturate is the
+       material; the inset top highlight is the specular edge that makes it
+       read as a physical layer rather than a translucent rectangle. */
+    .lg {
+      position: relative;
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      backdrop-filter: blur(28px) saturate(180%);
+      background: rgba(255,255,255,.085);
+      border: .5px solid rgba(255,255,255,.16);
+      box-shadow:
+        inset 0 .5px 0 rgba(255,255,255,.34),
+        inset 0 -.5px 0 rgba(255,255,255,.06),
+        0 10px 30px -14px rgba(0,0,0,.7);
+    }
+    .lg--thin {
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      backdrop-filter: blur(18px) saturate(160%);
+      background: rgba(255,255,255,.055);
+      border-color: rgba(255,255,255,.12);
+      box-shadow: inset 0 .5px 0 rgba(255,255,255,.22);
+    }
+    .lg--amber {
+      background: linear-gradient(180deg, rgba(255,180,84,.28) 0%, rgba(255,150,60,.16) 100%);
+      border-color: rgba(255,196,120,.55);
+      box-shadow:
+        inset 0 .5px 0 rgba(255,255,255,.55),
+        0 14px 34px -16px rgba(255,160,60,.75);
+    }
+
+    .lg-num {
+      width: 26px; height: 26px; border-radius: 9px; flex: none;
+      display: grid; place-items: center;
+      font-size: 12.5px; font-weight: 600;
+      background: rgba(255,255,255,.1);
+      border: .5px solid rgba(255,255,255,.14);
+      box-shadow: inset 0 .5px 0 rgba(255,255,255,.28);
+      color: rgba(255,255,255,.72);
+    }
+    .lg-name { font-size: 15.5px; font-weight: 590; letter-spacing: -.012em; }
+    .lg-desc { font-size: 12.5px; line-height: 1.44; color: rgba(255,255,255,.6); }
+  </style>
+</helmet>
+
+<div class="lg-root">
+
+  <!-- Content bed -->
+  <div class="lg-bed">
+    <div class="lg-blob" style="width:340px; height:340px; left:-70px; top:-40px;  background:#c2622a"></div>
+    <div class="lg-blob" style="width:300px; height:300px; right:-90px; top:120px; background:#7a3f9e"></div>
+    <div class="lg-blob" style="width:320px; height:320px; left:-40px; bottom:40px; background:#1d6f7a"></div>
+    <div class="lg-blob" style="width:260px; height:260px; right:-60px; bottom:-70px; background:#b8452f"></div>
+    <div style="position:absolute; inset:0; background:rgba(10,8,12,.5)"></div>
+  </div>
+
+  <div style="position:relative; z-index:1; height:100%; display:flex; flex-direction:column">
+
+    <!-- real status bar paints here -->
+    <div style="height:56px; flex:none"></div>
+
+    <!-- Title -->
+    <div style="padding:0 20px 14px; flex:none">
+      <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px">
+        <div>
+          <div style="font-size:33px; font-weight:700; letter-spacing:-.032em; line-height:1.02">Meni</div>
+          <div style="font-size:13px; color:rgba(255,255,255,.58); margin-top:5px">Teden 1 &middot; 1.&ndash;5. september</div>
+        </div>
+        <div class="lg lg--thin" style="border-radius:999px; padding:7px 12px; display:flex; align-items:center; gap:6px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffc77e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 5.6L19.6 11 14 13l-2 5.6L10 13 4.4 11 10 8.6z"/></svg>
+          <span style="font-size:12px; font-weight:600; color:#ffc77e">AI</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day capsules -->
+    <div style="display:flex; gap:7px; padding:0 20px 15px; flex:none">
+      <div class="lg lg--amber" style="flex:1; border-radius:15px; padding:9px 0 8px; text-align:center">
+        <div style="font-size:10px; font-weight:640; letter-spacing:.07em; color:rgba(40,20,0,.62)">PON</div>
+        <div style="font-size:15px; font-weight:680; margin-top:2px; color:#2a1600">1</div>
+      </div>
+      <div class="lg lg--thin" style="flex:1; border-radius:15px; padding:9px 0 8px; text-align:center">
+        <div style="font-size:10px; font-weight:640; letter-spacing:.07em; color:rgba(255,255,255,.5)">TOR</div>
+        <div style="font-size:15px; font-weight:620; margin-top:2px; color:rgba(255,255,255,.88)">2</div>
+      </div>
+      <div class="lg lg--thin" style="flex:1; border-radius:15px; padding:9px 0 8px; text-align:center">
+        <div style="font-size:10px; font-weight:640; letter-spacing:.07em; color:rgba(255,255,255,.5)">SRE</div>
+        <div style="font-size:15px; font-weight:620; margin-top:2px; color:rgba(255,255,255,.88)">3</div>
+      </div>
+      <div class="lg lg--thin" style="flex:1; border-radius:15px; padding:9px 0 8px; text-align:center">
+        <div style="font-size:10px; font-weight:640; letter-spacing:.07em; color:rgba(255,255,255,.5)">ČET</div>
+        <div style="font-size:15px; font-weight:620; margin-top:2px; color:rgba(255,255,255,.88)">4</div>
+      </div>
+      <div class="lg lg--thin" style="flex:1; border-radius:15px; padding:9px 0 8px; text-align:center">
+        <div style="font-size:10px; font-weight:640; letter-spacing:.07em; color:rgba(255,255,255,.5)">PET</div>
+        <div style="font-size:15px; font-weight:620; margin-top:2px; color:rgba(255,255,255,.88)">5</div>
+      </div>
+    </div>
+
+    <!-- Meals -->
+    <div style="display:flex; flex-direction:column; gap:9px; padding:0 20px; flex:1; min-height:0">
+
+      <div class="lg lg--amber" style="border-radius:20px; padding:13px 15px">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div class="lg-num" style="background:rgba(255,255,255,.55); color:#5a2f00; border-color:rgba(255,255,255,.7)">5</div>
+          <div class="lg-name" style="flex:1; color:#fff">Meni 5</div>
+          <div style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,.28); border-radius:999px; padding:3px 9px 3px 7px; box-shadow:inset 0 .5px 0 rgba(255,255,255,.5)">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2 5.6L19.6 11 14 13l-2 5.6L10 13 4.4 11 10 8.6z"/></svg>
+            <span style="font-size:10.5px; font-weight:660; color:#fff; letter-spacing:.015em">AI</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px; line-height:1.44; color:rgba(255,255,255,.92); margin-top:7px">dve hrenovki v beli štručki, sok</div>
+        <div style="font-size:11px; color:rgba(255,255,255,.7); margin-top:5px">XXL &middot; +0,80&nbsp;&euro;</div>
+      </div>
+
+      <div class="lg" style="border-radius:20px; padding:13px 15px">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div class="lg-num">1</div>
+          <div class="lg-name" style="flex:1">Meni 1</div>
+          <div style="font-size:10.5px; font-weight:620; color:#8fdc9b; background:rgba(143,220,155,.16); border-radius:999px; padding:3px 9px">naročeno</div>
+        </div>
+        <div class="lg-desc" style="margin-top:7px">lepinja, pariška salama, sir, kisla kumarica, sok</div>
+      </div>
+
+      <div class="lg" style="border-radius:20px; padding:13px 15px">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div class="lg-num">2</div>
+          <div class="lg-name" style="flex:1">Meni 2</div>
+        </div>
+        <div class="lg-desc" style="margin-top:7px">piščančja hrenovka v beli štručki, sok</div>
+      </div>
+
+      <div class="lg" style="border-radius:20px; padding:13px 15px">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div class="lg-num" style="color:#9ce0a8">3</div>
+          <div class="lg-name" style="flex:1">Meni 3 <span style="font-weight:500; font-size:13px; color:#9ce0a8">veg</span></div>
+        </div>
+        <div class="lg-desc" style="margin-top:7px">polnozrnata bombeta, sirni namaz, mozzarella, kalčki, solata, paradižnik, sok</div>
+      </div>
+
+      <div class="lg" style="border-radius:20px; padding:13px 15px">
+        <div style="display:flex; align-items:center; gap:10px">
+          <div class="lg-num" style="color:#c9b0f5">4</div>
+          <div class="lg-name" style="flex:1">Meni 4 <span style="font-weight:500; font-size:13px; color:#c9b0f5">fit</span></div>
+        </div>
+        <div class="lg-desc" style="margin-top:7px">tofu in pečena zelenjava na listnati solati, kruh, sok</div>
+      </div>
+
+    </div>
+
+    <!-- Floating glass tab bar -->
+    <div style="flex:none; padding:10px 16px 0">
+      <div class="lg" style="border-radius:26px; padding:9px 6px; display:flex">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#ffb454" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <span style="font-size:9.5px; font-weight:600; color:#ffb454">Meni</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.8L18.5 9.5 13.7 11.2 12 16l-1.7-4.8L5.5 9.5l4.8-1.7z"/></svg>
+          <span style="font-size:9.5px; color:rgba(255,255,255,.45)">Trening</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+          <span style="font-size:9.5px; color:rgba(255,255,255,.45)">Statistika</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1z"/></svg>
+          <span style="font-size:9.5px; color:rgba(255,255,255,.45)">Zdravje</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+          <span style="font-size:9.5px; color:rgba(255,255,255,.45)">Dnevnik</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 14.5a1.7 1.7 0 0 0 .35 1.9l.05.05a2 2 0 1 1-2.85 2.85l-.05-.05a1.7 1.7 0 0 0-1.9-.35 1.7 1.7 0 0 0-1.05 1.57V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.57 1.7 1.7 0 0 0-1.9.35l-.05.05A2 2 0 1 1 4.05 16.9l.05-.05a1.7 1.7 0 0 0 .35-1.9 1.7 1.7 0 0 0-1.57-1.05H3a2 2 0 0 1 0-4h.1A1.7 1.7 0 0 0 4.67 8.8a1.7 1.7 0 0 0-.35-1.9l-.05-.05A2 2 0 1 1 7.1 4l.05.05a1.7 1.7 0 0 0 1.9.35H9.1a1.7 1.7 0 0 0 1.05-1.57V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1.05 1.57 1.7 1.7 0 0 0 1.9-.35l.05-.05a2 2 0 1 1 2.85 2.85l-.05.05a1.7 1.7 0 0 0-.35 1.9v.05a1.7 1.7 0 0 0 1.57 1.05H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.05z"/></svg>
+          <span style="font-size:9.5px; color:rgba(255,255,255,.45)">Več</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- home indicator space -->
+    <div style="height:22px; flex:none"></div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
