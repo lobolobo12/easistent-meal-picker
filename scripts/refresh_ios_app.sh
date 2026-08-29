@@ -15,7 +15,7 @@ set -uo pipefail
 
 DEVICE_ID="F3ABE99B-E336-50C5-9428-C691BA0B202B"
 PROJECT="/Users/lovrobor/meal-picker"
-RENEW_WITHIN_DAYS=2
+RENEW_WITHIN_DAYS=3
 LOG="$PROJECT/build/refresh.log"
 
 export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
