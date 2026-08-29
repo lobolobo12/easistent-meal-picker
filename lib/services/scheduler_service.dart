@@ -23,6 +23,9 @@ const _reminderNotifId = 1000;
 const _resultNotifId = 1001;
 const _menuAvailableNotifId = 1002;
 const _ratingNotifId = 1003;
+const _autoSubmitPromptNotifId = 1004;
+/// Base id for the per-date iOS rating prompts (1010..1016).
+const _iosRatingNotifIdBase = 1010;
 
 final FlutterLocalNotificationsPlugin _notificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -69,7 +72,22 @@ const _androidNotifDetails = AndroidNotificationDetails(
   importance: Importance.high,
   priority: Priority.high,
 );
-const _notifDetails = NotificationDetails(android: _androidNotifDetails);
+const _darwinInitSettings = DarwinInitializationSettings(
+  // Permissions are requested explicitly in requestNotificationPermission()
+  // so the prompt appears during onboarding, not at cold start.
+  requestAlertPermission: false,
+  requestBadgePermission: false,
+  requestSoundPermission: false,
+);
+const _darwinNotifDetails = DarwinNotificationDetails(
+  presentAlert: true,
+  presentBadge: true,
+  presentSound: true,
+);
+const _notifDetails = NotificationDetails(
+  android: _androidNotifDetails,
+  iOS: _darwinNotifDetails,
+);
 
 /// Ensure the plugin + channel are initialized in the current isolate.
 /// Safe to call from main or background isolates, any number of times.
@@ -83,7 +101,10 @@ Future<FlutterLocalNotificationsPlugin> _ensurePlugin() async {
       await android?.createNotificationChannel(_androidChannel);
     }
     await _notificationsPlugin.initialize(
-      const InitializationSettings(android: _androidInitSettings),
+      const InitializationSettings(
+        android: _androidInitSettings,
+        iOS: _darwinInitSettings,
+      ),
       onDidReceiveNotificationResponse: (response) {
         onNotificationTap?.call(response.payload);
       },
@@ -117,12 +138,17 @@ Future<void> initScheduler() async {
     await _ensurePlugin();
   }
 
-  try {
-    await AndroidAlarmManager.initialize();
-    await SchedulerDebugLog.log('init', 'AndroidAlarmManager.initialize OK');
-  } catch (e) {
+  if (Platform.isAndroid) {
+    try {
+      await AndroidAlarmManager.initialize();
+      await SchedulerDebugLog.log('init', 'AndroidAlarmManager.initialize OK');
+    } catch (e) {
+      await SchedulerDebugLog.log(
+          'init', 'AndroidAlarmManager.initialize failed: $e');
+    }
+  } else {
     await SchedulerDebugLog.log(
-        'init', 'AndroidAlarmManager.initialize failed: $e');
+        'init', 'alarm manager skipped — not Android');
   }
 }
 
@@ -149,6 +175,17 @@ Future<({bool notificationsGranted, bool exactAlarmGranted})>
       final e = await Permission.scheduleExactAlarm.request();
       exact = e.isGranted;
       await SchedulerDebugLog.log('perm', 'scheduleExactAlarm: $e');
+    } else if (Platform.isIOS) {
+      // iOS has no exact-alarm concept — only the notification prompt.
+      final ios = _notificationsPlugin.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      final granted = await ios?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      notif = granted ?? false;
+      await SchedulerDebugLog.log('perm', 'iOS notifications: $granted');
     }
   } catch (e) {
     await SchedulerDebugLog.log('perm', 'request threw: $e');
@@ -193,6 +230,15 @@ Future<void> scheduleWeeklyTasks() async {
     } catch (e) {
       await SchedulerDebugLog.log(
           'schedule', 'zonedSchedule failed: $e');
+    }
+
+    // Everything below this point is Android alarm scheduling. iOS has no
+    // API that can run Dart at a wall-clock time in the background, so the
+    // iOS path schedules notifications instead and does the actual work on
+    // next app launch — see _scheduleIosTasks / runForegroundCatchUp.
+    if (!Platform.isAndroid) {
+      await _scheduleIosTasks(now);
+      return;
     }
 
     // 2. Monday 18:00 auto-submit via periodic alarm (every ~7 days).
@@ -290,11 +336,173 @@ Future<void> scheduleWeeklyTasks() async {
   }
 }
 
+/// iOS counterpart to the Android alarm block in [scheduleWeeklyTasks].
+///
+/// iOS gives no way to run Dart at a wall-clock time in the background, so
+/// each alarm becomes a local notification and the work it would have done
+/// happens on next app launch via [runForegroundCatchUp].
+Future<void> _scheduleIosTasks(tz.TZDateTime now) async {
+  // Monday 18:00 — Android submits here; iOS asks the user to open the app.
+  try {
+    await _notificationsPlugin.zonedSchedule(
+      _autoSubmitPromptNotifId,
+      'Cas za oddajo menija',
+      'Odpri aplikacijo -- AI bo oddal izbire za naslednji teden',
+      _nextWeekday(now, DateTime.monday, 18, 0),
+      _notifDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: 'auto_submit',
+    );
+    await SchedulerDebugLog.log(
+        'schedule', 'iOS auto-submit prompt scheduled (weekly Mon 18:00)');
+  } catch (e) {
+    await SchedulerDebugLog.log(
+        'schedule', 'iOS auto-submit prompt failed: $e');
+  }
+
+  await _scheduleIosRatingReminders(now);
+}
+
+/// Schedule 13:00 rating prompts for each of the next 7 days that already
+/// has a real submission logged and no rating yet.
+///
+/// Android decides this at fire time inside `_handleRatingReminder`; iOS has
+/// to commit up front, so this is re-run on every [scheduleWeeklyTasks] call
+/// (menu load and after each submit) to pick up newly logged days.
+Future<void> _scheduleIosRatingReminders(tz.TZDateTime now) async {
+  try {
+    final dir = await getApplicationDocumentsDirectory();
+
+    final logFile = File('${dir.path}/submission_log.json');
+    if (!logFile.existsSync()) return;
+    List<dynamic> logData;
+    try {
+      logData = jsonDecode(await logFile.readAsString()) as List<dynamic>;
+    } catch (_) {
+      return;
+    }
+
+    final ratedDates = <String>{};
+    final ratingsFile = File('${dir.path}/meal_ratings.json');
+    if (ratingsFile.existsSync()) {
+      try {
+        final ratings =
+            jsonDecode(await ratingsFile.readAsString()) as List<dynamic>;
+        for (final r in ratings) {
+          if (r is Map<String, dynamic> && r['date'] is String) {
+            ratedDates.add(r['date'] as String);
+          }
+        }
+      } catch (_) {}
+    }
+
+    final realSubmissions = <String>{
+      for (final e in logData)
+        if (e is Map<String, dynamic> &&
+            e['date'] is String &&
+            e['menuId'] != '__odjava__' &&
+            e['menuId'] != '__odsoten__')
+          e['date'] as String,
+    };
+
+    var scheduled = 0;
+    for (var offset = 0; offset < 7; offset++) {
+      final day = now.add(Duration(days: offset));
+      if (day.weekday > DateTime.friday) continue;
+
+      final dateStr = _fmtDate(day);
+      if (!realSubmissions.contains(dateStr)) continue;
+      if (ratedDates.contains(dateStr)) continue;
+
+      final at = tz.TZDateTime(
+          now.location, day.year, day.month, day.day, 13, 0);
+      if (!at.isAfter(now)) continue;
+
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          _iosRatingNotifIdBase + offset,
+          'Kako ti je bila danes malica?',
+          'Oceni z 1-5 zvezdicami',
+          at,
+          _notifDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'rate_meal',
+        );
+        scheduled++;
+      } catch (e) {
+        await SchedulerDebugLog.log(
+            'schedule', 'iOS rating prompt for $dateStr failed: $e');
+      }
+    }
+    await SchedulerDebugLog.log(
+        'schedule', 'iOS rating prompts scheduled: $scheduled');
+  } catch (e) {
+    await SchedulerDebugLog.log(
+        'schedule', 'iOS rating prompts failed: $e');
+  }
+}
+
+/// Run, on app launch and resume, the work Android does from background
+/// alarms. No-op on Android, where the alarms handle it.
+///
+/// Every handler is idempotent through its own marker file, so calling this
+/// on each resume costs at most one cheap file read when there is nothing
+/// to do.
+Future<void> runForegroundCatchUp() async {
+  if (Platform.isAndroid) return;
+  await SchedulerDebugLog.log('catchup', 'foreground catch-up start');
+
+  // Auto-submit, with the Monday-evening gate relaxed: if the user did not
+  // open the app on Monday night, submitting on Tuesday is still useful.
+  // The weekly marker file keeps it to one submit per week either way.
+  try {
+    await _handleAutoSubmit(relaxedGate: true);
+  } catch (e) {
+    await SchedulerDebugLog.log('catchup', 'auto-submit threw: $e');
+  }
+
+  // Menu-availability check — has its own weekly marker.
+  try {
+    await _handleMenuCheck();
+  } catch (e) {
+    await SchedulerDebugLog.log('catchup', 'menu-check threw: $e');
+  }
+
+  // Today's rating prompt, if 13:00 has passed and it was not already shown
+  // today. Without this a meal eaten before the app was opened never gets
+  // a prompt, since the scheduled reminder for today is already in the past.
+  try {
+    tz.initializeTimeZones();
+    final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
+    if (now.hour >= 13) {
+      final dir = await getApplicationDocumentsDirectory();
+      final marker = File('${dir.path}/rating_notified_marker.txt');
+      final todayStr = _fmtDate(now);
+      final alreadyShown = marker.existsSync() &&
+          (await marker.readAsString()).trim() == todayStr;
+      if (!alreadyShown) {
+        await _handleRatingReminder();
+        await marker.writeAsString(todayStr);
+      }
+    }
+  } catch (e) {
+    await SchedulerDebugLog.log('catchup', 'rating reminder threw: $e');
+  }
+
+  await SchedulerDebugLog.log('catchup', 'foreground catch-up done');
+}
+
 /// Cancel all scheduled notifications and alarms.
 Future<void> cancelScheduledTasks() async {
   try {
     await _notificationsPlugin.cancelAll();
   } catch (_) {}
+  if (!Platform.isAndroid) return;
   try {
     await AndroidAlarmManager.cancel(_autoSubmitAlarmId);
   } catch (_) {}
@@ -317,7 +525,7 @@ Future<void> cancelScheduledTasks() async {
 /// 5. Skip days already submitted from this app (submission_log.json)
 /// 6. Use MealPredictor to pick the best option per remaining day
 /// 7. Submit picks, log results, write marker, show notification
-Future<void> _handleAutoSubmit() async {
+Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
   try {
     // Evaluate the weekday/hour gate in Europe/Ljubljana, not device-local
     // time. Device locale may differ from the scheduled tz, which would
@@ -325,10 +533,21 @@ Future<void> _handleAutoSubmit() async {
     tz.initializeTimeZones();
     final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
 
-    // Safety check: only act on Mondays between 17:30 and 20:00
-    if (now.weekday != DateTime.monday || now.hour < 17 || now.hour >= 20) {
+    // Safety check: normally only Mondays between 17:00 and 20:00, which is
+    // when the alarm fires. [relaxedGate] widens this to Monday 17:00
+    // through Friday for the iOS foreground catch-up, where the run happens
+    // whenever the user next opens the app rather than at a fixed time. The
+    // weekly marker below still allows only one submit per week.
+    final inWindow = relaxedGate
+        ? (now.weekday == DateTime.monday
+            ? now.hour >= 17
+            : now.weekday <= DateTime.friday)
+        : (now.weekday == DateTime.monday &&
+            now.hour >= 17 &&
+            now.hour < 20);
+    if (!inWindow) {
       await SchedulerDebugLog.log('auto-submit',
-          'gate-reject: weekday=${now.weekday} hour=${now.hour} (need Mon 17-19)');
+          'gate-reject: weekday=${now.weekday} hour=${now.hour} relaxed=$relaxedGate');
       return;
     }
 

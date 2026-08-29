@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:home_widget/home_widget.dart';
 
 import '../models/meal_option.dart';
@@ -17,6 +19,11 @@ Future<void> updateHomeWidget({
   MealPredictor? predictor,
   Map<String, String> selections = const {},
 }) async {
+  // The widget is an Android AppWidget provider; there is no iOS WidgetKit
+  // extension in this project, so saving data would go nowhere and
+  // updateWidget would fail on a missing app group.
+  if (!Platform.isAndroid) return;
+
   final now = DateTime.now();
   final todayStr = _fmtDate(now);
   final tomorrowStr = _fmtDate(now.add(const Duration(days: 1)));

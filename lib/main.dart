@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -23,11 +24,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initScheduler();
 
-  // Home widget: set Android widget provider name for click-to-open
-  HomeWidget.setAppGroupId('com.easistent.mealpicker');
+  // Home widget: set Android widget provider name for click-to-open.
+  // Android-only — see updateHomeWidget in services/widget_service.dart.
+  if (Platform.isAndroid) {
+    HomeWidget.setAppGroupId('com.easistent.mealpicker');
+  }
 
   // Wire up notification tap handler
   onNotificationTap = (payload) {
+    if (payload == 'auto_submit') {
+      // iOS Monday-18:00 prompt: the submit itself runs in the catch-up.
+      runForegroundCatchUp();
+      return;
+    }
     if (payload == 'rate_meal') {
       // Small delay to ensure the app is fully rendered
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -49,16 +58,35 @@ class MealPickerApp extends StatefulWidget {
   State<MealPickerApp> createState() => _MealPickerAppState();
 }
 
-class _MealPickerAppState extends State<MealPickerApp> {
+class _MealPickerAppState extends State<MealPickerApp>
+    with WidgetsBindingObserver {
   bool? _onboardingDone;
   bool _showTour = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     OnboardingStore.isComplete().then((done) {
       if (mounted) setState(() => _onboardingDone = done);
+      // On iOS the scheduled work can only run while the app is alive, so
+      // catch up on anything its alarms would have done. No-op on Android
+      // and when onboarding has not been completed (no credentials yet).
+      if (done) runForegroundCatchUp();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _onboardingDone == true) {
+      runForegroundCatchUp();
+    }
   }
 
   @override
