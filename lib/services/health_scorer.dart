@@ -1,3 +1,5 @@
+import '../util/allergens.dart';
+
 // ── Food‑group keyword rules ──
 //
 // Each keyword maps to a food group and a raw weight.
@@ -44,6 +46,7 @@ const _keywords = <String, _FoodGroup>{
   'špinač': _FoodGroup.vegetable, // špinača
   'blitva': _FoodGroup.vegetable,
   'korenje': _FoodGroup.vegetable,
+  'korenč': _FoodGroup.vegetable, // korenček, korenčkom
   'buča': _FoodGroup.vegetable, // buča, bučka
   'bučka': _FoodGroup.vegetable,
   'grah': _FoodGroup.vegetable,
@@ -64,8 +67,10 @@ const _keywords = <String, _FoodGroup>{
   'teleč': _FoodGroup.protein, // telečja, telečje
   'svinjsk': _FoodGroup.protein, // svinjska, svinjsko
   'jajc': _FoodGroup.protein, // jajce, jajca
+  'jajč': _FoodGroup.protein, // jajčni, jajčna — č is a different letter
   'rib': _FoodGroup.protein, // riba, ribje, ribi
   'tuna': _FoodGroup.protein,
+  'tunin': _FoodGroup.protein, // tunina, tunino — "tuna" misses both
   'losos': _FoodGroup.protein,
   'postrv': _FoodGroup.protein,
   'skuš': _FoodGroup.protein, // skuša
@@ -83,6 +88,7 @@ const _keywords = <String, _FoodGroup>{
   'leča': _FoodGroup.legume,
   'lečo': _FoodGroup.legume,
   'fižol': _FoodGroup.legume,
+  'ričet': _FoodGroup.legume, // barley-and-bean stew; named, not itemised
   'čičerik': _FoodGroup.legume, // čičerika
 
   // fruit
@@ -167,7 +173,11 @@ class HealthScore {
 ///   3. Award a diversity bonus when ≥3 distinct positive groups appear.
 ///   4. Map raw sum → 1–10 via a clamped linear scale.
 HealthScore scoreMeal(String description) {
-  final text = description.toLowerCase();
+  // Score the food, not the legal small print. Matching against the raw
+  // description let an allergen declaration count as nutrition: two
+  // chocolate pastries scored 4/10 instead of 2/10 because "jajca" appears
+  // in their allergen list. Genuine ingredient brackets are kept.
+  final text = stripAllergenDeclarations(description).toLowerCase();
   final detected = <_FoodGroup>{};
 
   // Match every keyword that appears as a substring in the description.
@@ -294,7 +304,9 @@ Set<String> detectFoodGroups(String description) {
 /// Find the highest‑weighted food group in a description.
 /// Prefers positive groups; falls back to neutral; ignores negative.
 _FoodGroup? _dominantGroup(String description) {
-  final text = description.toLowerCase();
+  // Same reason as scoreMeal: an allergen list is not what the meal is made
+  // of, and this one decides whether two days count as repetitive.
+  final text = stripAllergenDeclarations(description).toLowerCase();
   final detected = <_FoodGroup>{};
 
   for (final entry in _keywords.entries) {

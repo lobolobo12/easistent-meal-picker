@@ -14,7 +14,8 @@ lib/
 │   └── meal_option.dart             # MealOption data class (menuId, name, desc, status, locationId, mealType)
 ├── util/
 │   ├── dates.dart                   # Slovenian day names + YYYY-MM-DD formatting, shared by every screen
-│   └── training_data.dart           # Duplicate-row collapsing (pure Dart, shared with the CLI harness)
+│   ├── training_data.dart           # Duplicate-row collapsing (pure Dart, shared with the CLI harness)
+│   └── allergens.dart               # Tells an allergen declaration from a real ingredient list
 ├── widgets/
 │   └── explain_sheet.dart           # "Why this score?" breakdown, opened by long-pressing a meal card
 ├── screens/
@@ -137,6 +138,32 @@ top-1 and mean rank per variant. Two things it has already caught:
   you accepted it is not. **Unmeasured** — the stored data never recorded
   which days were corrections, so there is no history to evaluate it against
 
+### Allergen vs Ingredient Brackets (util/allergens.dart)
+eAsistent descriptions carry two kinds of bracket and they must not be
+treated alike:
+
+    "pariška salama (pšenica, mlečni izdelek, ki vsebuje laktozo)"   allergens
+    "mehiška solata (paradižnik, paprika, fižol, cvetača, koruza..)" ingredients
+
+`stripAllergenDeclarations` drops the first and keeps the second, working
+term by term so a mixed bracket splits correctly. Terms match whole, never as
+substrings — "zelena" alone is celery, "zelena solata" is a green salad.
+An unrecognised term keeps its bracket, so a gap in the list is never worse
+than the old behaviour.
+
+Both `health_scorer.scoreMeal` and `meal_predictor.tokenize` use it. The
+health scorer used to read the allergen list as nutrition: two chocolate
+pastries scored 4/10 because "jajca" appeared in their allergen declaration.
+The predictor used to discard every bracket, losing five real vegetables from
+that salad.
+
+**Fixing this exposed that the allergen list was compensating for gaps in the
+food keywords** — Slovenian case endings do not substring-match. `tuna` misses
+"tunino", `jajc` misses "jajčni" (c and č are different letters), `korenje`
+misses "korenčkom". Those meals only scored protein because the allergen
+bracket happened to say "ribe" or "jajca". Adding a keyword is cheap; check
+the score distribution over `assets/training_data.json` before and after.
+
 ### New Menu Detection (menu_screen `_NewMenusBanner`)
 - `MealPredictor.knownMenus` exposes the normalized menus the model has any
   history for
@@ -213,7 +240,7 @@ iOS differences from Android, all in `scheduler_service.dart`:
 ## Tests
 
 ```bash
-flutter test    # 123 tests, no device and no live account needed
+flutter test    # 138 tests, no device and no live account needed
 ```
 
 - `test/auto_submit_test.dart` — **the Monday rehearsal.** Drives the real

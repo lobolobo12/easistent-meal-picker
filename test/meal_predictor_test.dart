@@ -38,6 +38,15 @@ void main() {
       expect(tokenize('kruh (pšenica, mlečni izdelek)'), ['kruh']);
     });
 
+    test('but keeps a bracket that lists real ingredients', () {
+      // Not every bracket is allergens. This one is the dish itself, and
+      // discarding it threw away five vegetables the model could learn from.
+      expect(
+        tokenize('solata (paradižnik, paprika, fižol)'),
+        containsAll(['paradižnik', 'paprika', 'fižol']),
+      );
+    });
+
     test('drops stop words and tokens under three characters', () {
       expect(tokenize('juha z rižem in sok'), ['juha', 'rižem']);
     });

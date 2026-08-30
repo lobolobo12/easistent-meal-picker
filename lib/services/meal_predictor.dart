@@ -1,4 +1,5 @@
 import '../models/meal_option.dart';
+import '../util/allergens.dart';
 
 const _stopWords = {
   'v', 'z', 's', 'in', 'ki', 'iz', 'na', 'za', 'od', 'po', 'se', 'je',
@@ -103,9 +104,7 @@ const kCorrectionWeight = 3;
 
 /// Tokenize a Slovenian food description into lowercase word tokens.
 List<String> tokenize(String description) {
-  var text = description.toLowerCase();
-  // Strip allergen parentheticals: (pšenica, mlečni izdelek, ...)
-  text = text.replaceAll(RegExp(r'\([^)]*\)'), '');
+  var text = stripAllergenDeclarations(description).toLowerCase();
   return [
     for (final m in RegExp(r'[a-zčšžćđ]+').allMatches(text))
       if (m.group(0)!.length >= _minTokenLen &&
