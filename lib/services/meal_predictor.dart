@@ -92,6 +92,15 @@ class PredictorTuning {
 // recommended less often; closer to 0 means it fires more readily.
 const kOdjavaScoreThreshold = -0.3;
 
+/// Weight given to a day where the user overrode the model's pick.
+///
+/// Unmeasured: the training data does not record whether a past day was a
+/// correction, so there is no history to evaluate this against. It rests on
+/// the argument that a deliberate override is stronger evidence than an
+/// accepted default, and it is deliberately modest so that being wrong about
+/// that costs little.
+const kCorrectionWeight = 3;
+
 /// Tokenize a Slovenian food description into lowercase word tokens.
 List<String> tokenize(String description) {
   var text = description.toLowerCase();
@@ -208,47 +217,68 @@ class MealPredictor {
     );
   }
 
+  /// A training day's weight — how much this one day should count.
+  ///
+  /// A day the user actively corrected the model on says more than one they
+  /// waved through, so entries carry a weight rather than being written to
+  /// the file several times over. Duplicating rows, which is what this code
+  /// used to do, inflated the raw counts as well as the rates, which quietly
+  /// let weighted days slip past [PredictorTuning.minTokenFreq] while
+  /// scraped ones could not.
+  static double _weightOf(Map day) {
+    final w = day['weight'];
+    if (w is num && w > 0) return w.toDouble();
+    return 1.0;
+  }
+
   /// Learn per-token preference scores from labeled training data.
   /// Uses base-rate correction: with ~8 options/day, random pick rate is
   /// ~12.5%, so that is the neutral point (score 0), not 50%.
   static Map<String, double> _buildKeywordModel(
       List<dynamic> data, PredictorTuning tuning) {
-    final chosenCounts = <String, int>{};
-    final rejectedCounts = <String, int>{};
-    var totalOptions = 0;
-    var totalChosen = 0;
+    final chosenWeight = <String, double>{};
+    final rejectedWeight = <String, double>{};
+    // Unweighted sightings, kept separately so the frequency floor asks
+    // "how often have I actually seen this word" rather than "how much do
+    // the days it appeared on count for".
+    final sightings = <String, int>{};
+    var totalOptions = 0.0;
+    var totalChosen = 0.0;
 
     for (final day in data) {
-      for (final opt in (day as Map)['options'] as List) {
+      final weight = _weightOf(day as Map);
+      for (final opt in day['options'] as List) {
         final tokens = tokenize((opt as Map)['description'] as String);
         final chosen = opt['chosen'] as bool;
         for (final t in tokens) {
+          sightings[t] = (sightings[t] ?? 0) + 1;
           if (chosen) {
-            chosenCounts[t] = (chosenCounts[t] ?? 0) + 1;
+            chosenWeight[t] = (chosenWeight[t] ?? 0) + weight;
           } else {
-            rejectedCounts[t] = (rejectedCounts[t] ?? 0) + 1;
+            rejectedWeight[t] = (rejectedWeight[t] ?? 0) + weight;
           }
         }
-        if (chosen) totalChosen++;
-        totalOptions++;
+        if (chosen) totalChosen += weight;
+        totalOptions += weight;
       }
     }
 
     final baseline = totalOptions > 0 ? totalChosen / totalOptions : 0.125;
     final scores = <String, double>{};
 
-    for (final token in {...chosenCounts.keys, ...rejectedCounts.keys}) {
-      final c = chosenCounts[token] ?? 0;
-      final r = rejectedCounts[token] ?? 0;
+    for (final token in {...chosenWeight.keys, ...rejectedWeight.keys}) {
+      final c = chosenWeight[token] ?? 0;
+      final r = rejectedWeight[token] ?? 0;
       final n = c + r;
-      if (n < tuning.minTokenFreq) continue;
+      if ((sightings[token] ?? 0) < tuning.minTokenFreq) continue;
       final rate = c / n;
       final raw = rate >= baseline
           ? (rate - baseline) / (1 - baseline)
           : (rate - baseline) / baseline;
       // Shrink toward neutral in proportion to how little evidence there is.
+      final obs = (sightings[token] ?? 0).toDouble();
       final confidence =
-          tuning.shrinkageK <= 0 ? 1.0 : n / (n + tuning.shrinkageK);
+          tuning.shrinkageK <= 0 ? 1.0 : obs / (obs + tuning.shrinkageK);
       scores[token] = raw * confidence;
     }
 
@@ -257,15 +287,16 @@ class MealPredictor {
 
   /// Learn menu type preference from historical pick frequency.
   static Map<String, double> _buildMenuTypeModel(List<dynamic> data) {
-    final typeChosen = <String, int>{};
-    final typeTotal = <String, int>{};
+    final typeChosen = <String, double>{};
+    final typeTotal = <String, double>{};
 
     for (final day in data) {
-      for (final opt in (day as Map)['options'] as List) {
+      final weight = _weightOf(day as Map);
+      for (final opt in day['options'] as List) {
         final name = normalizeMenuName((opt as Map)['menu_name'] as String);
-        typeTotal[name] = (typeTotal[name] ?? 0) + 1;
+        typeTotal[name] = (typeTotal[name] ?? 0) + weight;
         if (opt['chosen'] as bool) {
-          typeChosen[name] = (typeChosen[name] ?? 0) + 1;
+          typeChosen[name] = (typeChosen[name] ?? 0) + weight;
         }
       }
     }
@@ -365,6 +396,64 @@ class MealPredictor {
         _tuning.wMenuType * menuScore +
         _tuning.wManual * manualScore +
         _tuning.wRating * ratingScore;
+  }
+
+  /// Rank a day's available options and report how clear the win was.
+  ///
+  /// The UI presented every pick with the same confident badge, whether the
+  /// model preferred it by a mile or by a rounding error. On a thin model
+  /// near-ties are common, and a coin flip dressed as a decision is the kind
+  /// of thing that quietly costs the user their trust the first time they
+  /// notice it.
+  /// [isCandidate] decides what counts as pickable. It defaults to
+  /// `available` only, which is what the unattended submit must use — an
+  /// already-ordered day is the user's choice and must not be overwritten.
+  /// The menu screen passes a wider predicate because it also suggests
+  /// improvements on days the school has already defaulted.
+  DayRanking rankDay(
+    List<MealOption> options, {
+    bool Function(MealOption)? isCandidate,
+  }) {
+    final candidate = isCandidate ?? (o) => o.status == 'available';
+    final scored = <({String id, String name, double score})>[
+      for (final opt in options)
+        if (candidate(opt))
+          (
+            id: opt.menuId,
+            name: opt.menuName,
+            score: scoreOption(opt.menuName, opt.description)
+          )
+    ]..sort((a, b) => b.score.compareTo(a.score));
+
+    if (scored.isEmpty) return const DayRanking.none();
+    if (scored.length == 1) {
+      return DayRanking(
+        menuId: scored.first.id,
+        score: scored.first.score,
+        runnerUpId: null,
+        runnerUpName: null,
+        margin: double.infinity,
+        relativeMargin: 1,
+      );
+    }
+
+    final best = scored.first;
+    final second = scored[1];
+    final worst = scored.last;
+    final spread = best.score - worst.score;
+    final margin = best.score - second.score;
+
+    return DayRanking(
+      menuId: best.id,
+      score: best.score,
+      runnerUpId: second.id,
+      runnerUpName: second.name,
+      margin: margin,
+      // Judged against the day's own spread rather than an absolute number,
+      // because the scale of these scores shifts with how much the model has
+      // learned. Everything within a tenth of the day's range is a tie.
+      relativeMargin: spread <= 0 ? 0 : margin / spread,
+    );
   }
 
   /// Break a score down into the signals that produced it.
@@ -599,4 +688,41 @@ class PickExplanation {
   /// Doubles as an honest "how much does this model actually know yet".
   double get keywordMaturity =>
       maxKeywordWeight <= 0 ? 0 : keywordWeight / maxKeywordWeight;
+}
+
+/// How decisively the model preferred one option on a given day.
+class DayRanking {
+  final String? menuId;
+  final double? score;
+  final String? runnerUpId;
+  final String? runnerUpName;
+
+  /// Raw gap to the runner-up.
+  final double margin;
+
+  /// [margin] as a fraction of the day's full score range, 0..1.
+  final double relativeMargin;
+
+  const DayRanking({
+    required this.menuId,
+    required this.score,
+    required this.runnerUpId,
+    required this.runnerUpName,
+    required this.margin,
+    required this.relativeMargin,
+  });
+
+  const DayRanking.none()
+      : menuId = null,
+        score = null,
+        runnerUpId = null,
+        runnerUpName = null,
+        margin = 0,
+        relativeMargin = 0;
+
+  /// Below this the top two are close enough that presenting the winner as
+  /// a decision overstates what the model actually knows.
+  static const closeThreshold = 0.10;
+
+  bool get isClose => menuId != null && relativeMargin < closeThreshold;
 }

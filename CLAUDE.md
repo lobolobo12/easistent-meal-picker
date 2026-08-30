@@ -13,7 +13,8 @@ lib/
 ├── models/
 │   └── meal_option.dart             # MealOption data class (menuId, name, desc, status, locationId, mealType)
 ├── util/
-│   └── dates.dart                   # Slovenian day names + YYYY-MM-DD formatting, shared by every screen
+│   ├── dates.dart                   # Slovenian day names + YYYY-MM-DD formatting, shared by every screen
+│   └── training_data.dart           # Duplicate-row collapsing (pure Dart, shared with the CLI harness)
 ├── widgets/
 │   └── explain_sheet.dart           # "Why this score?" breakdown, opened by long-pressing a meal card
 ├── screens/
@@ -123,6 +124,29 @@ top-1 and mean rank per variant. Two things it has already caught:
 - User pick -> saved to training data -> preferences auto-derived -> predictor rebuilt
 - AI pick indicator shows current model's preference for comparison
 
+### Training Weights (util/training_data.dart)
+- A training day carries an optional `weight`; submitting used to append the
+  same day three times instead
+- Duplicating rows inflated the raw token counts as well as the rates, so a
+  manually submitted day slipped past `minTokenFreq` while an identical
+  scraped day could not — the model behaved differently depending on data
+  provenance. The frequency floor now counts sightings, the rates use weight
+- `TrainingStore.load()` collapses on read, so existing devices migrate
+  themselves; `bin/eval_predictor.dart` applies the same collapsing
+- A day where you overrode the AI is weighted `kCorrectionWeight`; one where
+  you accepted it is not. **Unmeasured** — the stored data never recorded
+  which days were corrections, so there is no history to evaluate it against
+
+### Pick Confidence (MealPredictor.rankDay)
+- Returns the winner, the runner-up, and the margin as a fraction of the
+  day's score range
+- Under `DayRanking.closeThreshold` the pick is shown as `AI · tesno` rather
+  than `AI`, and the explanation names the alternative
+- `isCandidate` is explicit: the unattended submit ranks only `available`
+  options so it cannot overwrite a real choice, while the menu screen also
+  ranks `ordered` ones so its highlight and its closeness flag describe the
+  same set
+
 ### Score Explanation (widgets/explain_sheet.dart)
 - Long-press any meal card on the Meni tab
 - `MealPredictor.explain()` returns the same arithmetic `scoreOption` runs,
@@ -178,7 +202,7 @@ iOS differences from Android, all in `scheduler_service.dart`:
 ## Tests
 
 ```bash
-flutter test    # 99 tests, no device and no live account needed
+flutter test    # 117 tests, no device and no live account needed
 ```
 
 - `test/auto_submit_test.dart` — **the Monday rehearsal.** Drives the real

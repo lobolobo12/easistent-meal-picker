@@ -31,7 +31,8 @@ void main() {
     },
   );
 
-  Future<void> open(WidgetTester tester, String menu, String desc) async {
+  Future<void> open(WidgetTester tester, String menu, String desc,
+      {String? closeRunnerUp}) async {
     await tester.pumpWidget(MaterialApp(
       home: Builder(
         builder: (context) => Scaffold(
@@ -43,6 +44,7 @@ void main() {
                 description: desc,
                 explanation: model.explain(menu, desc),
                 isAiPick: true,
+                closeRunnerUp: closeRunnerUp,
               ),
               child: const Text('open'),
             ),
@@ -99,5 +101,22 @@ void main() {
     await open(tester, 'Meni 9', 'popolnoma neznana jed');
     expect(find.text('Meni 9'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a decisive pick is labelled plainly', (tester) async {
+    await open(tester, 'Meni 5 (XXL +0,70€)', 'pica margarita');
+    expect(find.text('Izbira AI'), findsOneWidget);
+    expect(find.text('AI · tesno'), findsNothing);
+  });
+
+  testWidgets('a near-tie says so and names the alternative',
+      (tester) async {
+    await open(tester, 'Meni 5 (XXL +0,70€)', 'pica margarita',
+        closeRunnerUp: 'Meni 3 (veg)');
+
+    // The badge must not claim a decision the model did not really make.
+    expect(find.text('Izbira AI'), findsNothing);
+    expect(find.text('AI · tesno'), findsOneWidget);
+    expect(find.textContaining('Meni 3 (veg)'), findsOneWidget);
   });
 }

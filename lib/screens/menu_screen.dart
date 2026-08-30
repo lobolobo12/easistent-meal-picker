@@ -54,6 +54,13 @@ class MenuScreenState extends State<MenuScreen> {
 
   // Selections: date -> menuId
   final Map<String, String> _aiPicks = {};
+
+  /// Days where the top two options are close enough that presenting the
+  /// pick as a decision overstates what the model knows.
+  final Set<String> _aiCloseDates = {};
+
+  /// Runner-up label per close day, for the explanation sheet.
+  final Map<String, String> _aiRunnerUp = {};
   final Map<String, String> _selections = {};
   // Scores: "date|menuId" -> score
   final Map<String, double> _scores = {};
@@ -109,6 +116,7 @@ class MenuScreenState extends State<MenuScreen> {
       _menu = {};
       _currentWeek = null;
       _aiPicks.clear();
+      _aiCloseDates.clear();
       _selections.clear();
       _scores.clear();
       _partiallyLockedDates.clear();
@@ -223,6 +231,8 @@ class MenuScreenState extends State<MenuScreen> {
 
   void _computePicks() {
     _aiPicks.clear();
+    _aiCloseDates.clear();
+    _aiRunnerUp.clear();
     _selections.clear();
     _scores.clear();
 
@@ -236,17 +246,23 @@ class MenuScreenState extends State<MenuScreen> {
           _scores['$date|${s.key}'] = s.value;
         }
 
-        String? bestId;
-        var bestScore = double.negativeInfinity;
-        for (final opt in options) {
-          if (opt.status != 'available' && opt.status != 'ordered') continue;
-          final score = _predictor!.scoreOption(opt.menuName, opt.description);
-          if (score > bestScore) {
-            bestScore = score;
-            bestId = opt.menuId;
+        // A day the school has already defaulted is still worth a
+        // suggestion here, so ordered options count as candidates — unlike
+        // the unattended submit, which must leave a real choice alone.
+        final ranking = _predictor!.rankDay(
+          options,
+          isCandidate: (o) =>
+              o.status == 'available' || o.status == 'ordered',
+        );
+        if (ranking.menuId != null) {
+          _aiPicks[date] = ranking.menuId!;
+          if (ranking.isClose) {
+            _aiCloseDates.add(date);
+            if (ranking.runnerUpName != null) {
+              _aiRunnerUp[date] = ranking.runnerUpName!;
+            }
           }
         }
-        if (bestId != null) _aiPicks[date] = bestId;
       }
 
       final orderedOpt =
@@ -501,12 +517,15 @@ class MenuScreenState extends State<MenuScreen> {
   void _onExplainTap(String date, MealOption option) {
     final predictor = _predictor;
     if (predictor == null) return;
+    final isAiPick = _aiPicks[date] == option.menuId;
     showExplainSheet(
       context,
       menuName: option.menuName,
       description: option.description,
       explanation: predictor.explain(option.menuName, option.description),
-      isAiPick: _aiPicks[date] == option.menuId,
+      isAiPick: isAiPick,
+      closeRunnerUp:
+          isAiPick && _aiCloseDates.contains(date) ? _aiRunnerUp[date] : null,
     );
   }
 
@@ -712,7 +731,16 @@ class MenuScreenState extends State<MenuScreen> {
       for (final date in successfulDays) {
         final options = _menu[date]!;
         final chosenId = _selections[date];
-        final entry = <String, dynamic>{
+
+        // A day where you took the model's suggestion tells it much less
+        // than one where you looked at the pick and chose something else:
+        // the first may just be you waving it through. Every manual submit
+        // used to be written three times over regardless, which — with no
+        // scraped data to contrast against — scaled everything equally and
+        // so distinguished nothing.
+        final agreedWithAi = _aiPicks[date] == chosenId;
+
+        trainingData.add(<String, dynamic>{
           'date': date,
           'options': [
             for (final o in options)
@@ -723,10 +751,8 @@ class MenuScreenState extends State<MenuScreen> {
                 'chosen': o.menuId == chosenId,
               },
           ],
-        };
-        for (var w = 0; w < 3; w++) {
-          trainingData.add(entry);
-        }
+          if (!agreedWithAi) 'weight': kCorrectionWeight,
+        });
       }
       await TrainingStore.save(trainingData);
 
@@ -1163,6 +1189,8 @@ class MenuScreenState extends State<MenuScreen> {
           selectable: selectable,
           selectedId: selectedId,
           aiPickId: aiPickId,
+          aiPickIsClose: _aiCloseDates.contains(date),
+          aiRunnerUp: _aiRunnerUp[date],
           orderedId: orderedOpt?.menuId,
           isPartiallyLocked: isPartiallyLocked,
           getScore: (menuId) => _getScore(date, menuId),
@@ -1217,6 +1245,8 @@ class _DaySection extends StatelessWidget {
   final bool selectable;
   final String? selectedId;
   final String? aiPickId;
+  final bool aiPickIsClose;
+  final String? aiRunnerUp;
   final String? orderedId;
   final bool isPartiallyLocked;
   final double Function(String menuId) getScore;
@@ -1230,6 +1260,8 @@ class _DaySection extends StatelessWidget {
     required this.selectable,
     required this.selectedId,
     required this.aiPickId,
+    required this.aiPickIsClose,
+    required this.aiRunnerUp,
     required this.orderedId,
     required this.isPartiallyLocked,
     required this.getScore,
@@ -1351,6 +1383,7 @@ class _DaySection extends StatelessWidget {
               option: opt,
               isSelected: isSelected,
               isAiPick: isAiPick,
+              aiPickIsClose: isAiPick && aiPickIsClose,
               isOrdered: isOrdered,
               score: score,
               healthScore: opt.description.isNotEmpty
@@ -1411,6 +1444,7 @@ class _MealCard extends StatelessWidget {
   final MealOption option;
   final bool isSelected;
   final bool isAiPick;
+  final bool aiPickIsClose;
   final VoidCallback onExplain;
   final bool isOrdered;
   final double? score;
@@ -1422,6 +1456,7 @@ class _MealCard extends StatelessWidget {
     required this.option,
     required this.isSelected,
     required this.isAiPick,
+    required this.aiPickIsClose,
     required this.onExplain,
     required this.isOrdered,
     required this.score,
@@ -1475,7 +1510,15 @@ class _MealCard extends StatelessWidget {
                   ),
                 ),
                 if (isAiPick) ...[
-                  PillChip(label: 'AI', color: kAccentMauve.withAlpha(200)),
+                  // A near-tie is labelled as one. Showing the same badge
+                  // for a clear winner and a coin flip is what makes the
+                  // model look wrong rather than uncertain when it misses.
+                  PillChip(
+                    label: aiPickIsClose ? 'AI · tesno' : 'AI',
+                    color: aiPickIsClose
+                        ? kTextMuted
+                        : kAccentMauve.withAlpha(200),
+                  ),
                   const SizedBox(width: 6),
                 ],
                 if (isOrdered) ...[

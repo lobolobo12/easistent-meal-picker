@@ -17,6 +17,7 @@ Future<void> showExplainSheet(
   required String description,
   required PickExplanation explanation,
   required bool isAiPick,
+  String? closeRunnerUp,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -27,6 +28,7 @@ Future<void> showExplainSheet(
       description: description,
       explanation: explanation,
       isAiPick: isAiPick,
+      closeRunnerUp: closeRunnerUp,
     ),
   );
 }
@@ -37,11 +39,15 @@ class _ExplainSheet extends StatelessWidget {
   final PickExplanation explanation;
   final bool isAiPick;
 
+  /// Set when this pick only just beat another option, naming it.
+  final String? closeRunnerUp;
+
   const _ExplainSheet({
     required this.menuName,
     required this.description,
     required this.explanation,
     required this.isAiPick,
+    required this.closeRunnerUp,
   });
 
   @override
@@ -91,8 +97,11 @@ class _ExplainSheet extends StatelessWidget {
                 ),
                 if (isAiPick)
                   PillChip(
-                      label: 'Izbira AI',
-                      color: kAccentMauve.withAlpha(200)),
+                    label: closeRunnerUp != null ? 'AI · tesno' : 'Izbira AI',
+                    color: closeRunnerUp != null
+                        ? kTextMuted
+                        : kAccentMauve.withAlpha(200),
+                  ),
               ],
             ),
             if (description.isNotEmpty) ...[
@@ -120,6 +129,14 @@ class _ExplainSheet extends StatelessWidget {
                     style: TextStyle(fontSize: 13, color: kTextMuted)),
               ],
             ),
+            if (closeRunnerUp != null) ...[
+              const SizedBox(height: kSp8),
+              Text(
+                'Komaj boljša izbira od: $closeRunnerUp. '
+                'Če ti ta teden ne ustreza, kar zamenjaj.',
+                style: kCaption,
+              ),
+            ],
             const SizedBox(height: kSp12),
             for (final f in explanation.factors)
               _FactorRow(factor: f, widest: widest),

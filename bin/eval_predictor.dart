@@ -14,13 +14,18 @@ import 'dart:io';
 
 import 'package:easistent_meal_picker/services/meal_predictor.dart';
 import 'package:easistent_meal_picker/services/preference_learner.dart';
+import 'package:easistent_meal_picker/util/training_data.dart';
 
 void main(List<String> args) {
   final path =
       args.isNotEmpty ? args.first : 'assets/training_data.json';
   final prefsPath = 'assets/preferences.json';
 
-  final data = jsonDecode(File(path).readAsStringSync()) as List<dynamic>;
+  // Collapse exactly as TrainingStore.load does, or a file still holding
+  // triplicated rows would be scored as three times as many days — with each
+  // day's own copies leaking into the folds that predict it.
+  final data = collapseTrainingDuplicates(
+      jsonDecode(File(path).readAsStringSync()) as List<dynamic>);
   final prefs = File(prefsPath).existsSync()
       ? jsonDecode(File(prefsPath).readAsStringSync()) as Map<String, dynamic>
       : <String, dynamic>{};
