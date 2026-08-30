@@ -21,7 +21,22 @@ import 'package:flutter/material.dart';
 
 const kBgBase = Color(0xFF0D0B10); // deep warm ground under the bed
 const kBgElevated = Color(0x16FFFFFF); // glass fill — translucent, not solid
-const kBgElevated2 = Color(0x24FFFFFF); // thicker glass (sheets, dialogs)
+const kBgElevated2 = Color(0x24FFFFFF); // thicker glass (inline surfaces)
+
+/// Base for modal surfaces — sheets and dialogs.
+///
+/// Deliberately a near-opaque *dark*, not a translucent white. A modal has to
+/// stay readable over whatever it covers, and the bed underneath is
+/// deliberately colourful: a thin white fill lightens that colour without
+/// hiding it, so text ends up sitting on amber and plum. Dark plus a real
+/// blur keeps the glass feel — you still catch the bed moving behind it —
+/// while giving white text something to sit on.
+const kSheetBase = Color(0xEE16121B);
+
+/// Blur radius for modal surfaces. Heavier than a bar's, because a bar only
+/// has to separate itself from content scrolling under it, while a sheet has
+/// to be legible over the whole screen.
+const double kSheetBlur = 40;
 const kBgElevated3 = Color(0x33FFFFFF);
 
 const kSeparator = Color(0x24FFFFFF); // hairline on glass
@@ -91,31 +106,71 @@ const double kRadiusSheet = 20;
 // is what makes the app read as native.
 
 const kLargeTitle = TextStyle(
-    fontSize: 34, fontWeight: FontWeight.w700, color: kLabel, height: 1.2);
+  fontSize: 34,
+  fontWeight: FontWeight.w700,
+  color: kLabel,
+  height: 1.2,
+);
 const kTitle1 = TextStyle(
-    fontSize: 28, fontWeight: FontWeight.w700, color: kLabel, height: 1.2);
+  fontSize: 28,
+  fontWeight: FontWeight.w700,
+  color: kLabel,
+  height: 1.2,
+);
 const kTitle2 = TextStyle(
-    fontSize: 22, fontWeight: FontWeight.w700, color: kLabel, height: 1.25);
+  fontSize: 22,
+  fontWeight: FontWeight.w700,
+  color: kLabel,
+  height: 1.25,
+);
 const kTitle3 = TextStyle(
-    fontSize: 20, fontWeight: FontWeight.w600, color: kLabel, height: 1.25);
+  fontSize: 20,
+  fontWeight: FontWeight.w600,
+  color: kLabel,
+  height: 1.25,
+);
 const kHeadline = TextStyle(
-    fontSize: 17, fontWeight: FontWeight.w600, color: kLabel, height: 1.3);
+  fontSize: 17,
+  fontWeight: FontWeight.w600,
+  color: kLabel,
+  height: 1.3,
+);
 const kBody = TextStyle(
-    fontSize: 17, fontWeight: FontWeight.w400, color: kLabel, height: 1.35);
+  fontSize: 17,
+  fontWeight: FontWeight.w400,
+  color: kLabel,
+  height: 1.35,
+);
 const kCallout = TextStyle(
-    fontSize: 16, fontWeight: FontWeight.w400, color: kLabel, height: 1.35);
+  fontSize: 16,
+  fontWeight: FontWeight.w400,
+  color: kLabel,
+  height: 1.35,
+);
 const kSubhead = TextStyle(
-    fontSize: 15, fontWeight: FontWeight.w400, color: kLabelSecondary,
-    height: 1.35);
+  fontSize: 15,
+  fontWeight: FontWeight.w400,
+  color: kLabelSecondary,
+  height: 1.35,
+);
 const kFootnote = TextStyle(
-    fontSize: 13, fontWeight: FontWeight.w400, color: kLabelSecondary,
-    height: 1.35);
+  fontSize: 13,
+  fontWeight: FontWeight.w400,
+  color: kLabelSecondary,
+  height: 1.35,
+);
 const kCaption = TextStyle(
-    fontSize: 12, fontWeight: FontWeight.w400, color: kLabelSecondary,
-    height: 1.3);
+  fontSize: 12,
+  fontWeight: FontWeight.w400,
+  color: kLabelSecondary,
+  height: 1.3,
+);
 const kCaption2 = TextStyle(
-    fontSize: 11, fontWeight: FontWeight.w400, color: kLabelTertiary,
-    height: 1.3);
+  fontSize: 11,
+  fontWeight: FontWeight.w400,
+  color: kLabelTertiary,
+  height: 1.3,
+);
 
 // ── Legacy aliases ──
 //
@@ -183,8 +238,14 @@ class LiquidBed extends StatelessWidget {
 
   const LiquidBed({super.key, required this.child});
 
-  static Widget _blob(double? l, double? t, double? r, double? b, double size,
-      Color color) {
+  static Widget _blob(
+    double? l,
+    double? t,
+    double? r,
+    double? b,
+    double size,
+    Color color,
+  ) {
     return Positioned(
       left: l,
       top: t,
@@ -253,11 +314,12 @@ class InsetGroup extends StatelessWidget {
     for (var i = 0; i < children.length; i++) {
       rows.add(children[i]);
       if (i != children.length - 1) {
-        rows.add(const Padding(
-          padding: EdgeInsets.only(left: kSp16),
-          child: Divider(
-              height: 0.5, thickness: 0.5, color: kSeparator),
-        ));
+        rows.add(
+          const Padding(
+            padding: EdgeInsets.only(left: kSp16),
+            child: Divider(height: 0.5, thickness: 0.5, color: kSeparator),
+          ),
+        );
       }
     }
 
@@ -269,9 +331,13 @@ class InsetGroup extends StatelessWidget {
           if (header != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(kSp16, 0, kSp16, kSp8),
-              child: Text(header!.toUpperCase(),
-                  style: kFootnote.copyWith(
-                      color: kLabelSecondary, letterSpacing: 0.5)),
+              child: Text(
+                header!.toUpperCase(),
+                style: kFootnote.copyWith(
+                  color: kLabelSecondary,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
           ClipRRect(
             borderRadius: BorderRadius.circular(kRadiusRow),
@@ -283,7 +349,8 @@ class InsetGroup extends StatelessWidget {
                   colors: [kGlassTop, kGlassBottom],
                 ),
                 border: Border.fromBorderSide(
-                    BorderSide(color: kGlassEdge, width: 0.5)),
+                  BorderSide(color: kGlassEdge, width: 0.5),
+                ),
               ),
               child: Column(children: rows),
             ),
@@ -333,7 +400,9 @@ class InsetRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 44),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: kSp16, vertical: kSp8),
+              horizontal: kSp16,
+              vertical: kSp8,
+            ),
             child: Row(
               children: [
                 if (icon != null) ...[
@@ -357,8 +426,10 @@ class InsetRow extends StatelessWidget {
                 if (value != null)
                   Padding(
                     padding: const EdgeInsets.only(left: kSp8),
-                    child: Text(value!,
-                        style: kBody.copyWith(color: kLabelSecondary)),
+                    child: Text(
+                      value!,
+                      style: kBody.copyWith(color: kLabelSecondary),
+                    ),
                   ),
                 if (trailing != null) ...[
                   const SizedBox(width: kSp8),
@@ -367,8 +438,11 @@ class InsetRow extends StatelessWidget {
                 if (showChevron)
                   const Padding(
                     padding: EdgeInsets.only(left: kSp4),
-                    child: Icon(CupertinoIcons.chevron_right,
-                        size: 14, color: kLabelTertiary),
+                    child: Icon(
+                      CupertinoIcons.chevron_right,
+                      size: 14,
+                      color: kLabelTertiary,
+                    ),
                   ),
               ],
             ),
@@ -393,9 +467,13 @@ class SectionHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(label.toUpperCase(),
-                style: kFootnote.copyWith(
-                    color: kLabelSecondary, letterSpacing: 0.5)),
+            child: Text(
+              label.toUpperCase(),
+              style: kFootnote.copyWith(
+                color: kLabelSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
           ),
           if (trailing != null) trailing!,
         ],
@@ -439,36 +517,37 @@ class GlassCard extends StatelessWidget {
     final br = BorderRadius.circular(radius);
     final accent = borderColor ?? kAccent;
 
-    final decoration = selected
-        ? BoxDecoration(
-            borderRadius: br,
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                accent.withValues(alpha: 0.30),
-                accent.withValues(alpha: 0.16),
-              ],
-            ),
-            border: Border.all(color: accent.withValues(alpha: 0.58)),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withValues(alpha: 0.30),
-                blurRadius: 30,
-                spreadRadius: -14,
-                offset: const Offset(0, 12),
+    final decoration =
+        selected
+            ? BoxDecoration(
+              borderRadius: br,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  accent.withValues(alpha: 0.30),
+                  accent.withValues(alpha: 0.16),
+                ],
               ),
-            ],
-          )
-        : BoxDecoration(
-            borderRadius: br,
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [kGlassTop, kGlassBottom],
-            ),
-            border: Border.all(color: kGlassEdge, width: 0.5),
-          );
+              border: Border.all(color: accent.withValues(alpha: 0.58)),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.30),
+                  blurRadius: 30,
+                  spreadRadius: -14,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            )
+            : BoxDecoration(
+              borderRadius: br,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [kGlassTop, kGlassBottom],
+              ),
+              border: Border.all(color: kGlassEdge, width: 0.5),
+            );
 
     return Padding(
       padding: margin,
@@ -494,9 +573,10 @@ class GlassCard extends StatelessWidget {
                 right: radius * 0.5,
                 child: Container(
                   height: 0.5,
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.55)
-                      : kSpecular,
+                  color:
+                      selected
+                          ? Colors.white.withValues(alpha: 0.55)
+                          : kSpecular,
                 ),
               ),
             ],
@@ -515,8 +595,10 @@ class GlassBar extends StatelessWidget {
   const GlassBar({
     super.key,
     required this.child,
-    this.padding =
-        const EdgeInsets.symmetric(horizontal: kSp16, vertical: kSp12),
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: kSp16,
+      vertical: kSp12,
+    ),
   });
 
   @override
@@ -539,6 +621,66 @@ class GlassBar extends StatelessWidget {
             border: Border(bottom: BorderSide(color: kGlassEdge, width: 0.5)),
           ),
           child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// A modal surface: real blur, a dark base, and the specular top edge.
+///
+/// Use this for anything that floats over the whole screen. The score
+/// explanation shipped without a BackdropFilter at all — just a 14% white
+/// fill — so the bed showed straight through the text.
+class GlassSheet extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  final double radius;
+
+  const GlassSheet({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(kSp16),
+    this.radius = kRadiusSheet,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final br = BorderRadius.circular(radius);
+    return ClipRRect(
+      borderRadius: br,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: kSheetBlur, sigmaY: kSheetBlur),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: br,
+            color: kSheetBase,
+            border: Border.all(color: kGlassEdge, width: 0.5),
+          ),
+          child: Stack(
+            children: [
+              // A faint top-down sheen so the panel still reads as glass
+              // rather than as a flat card.
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [kGlassTop, Color(0x00FFFFFF)],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                left: radius * 0.5,
+                right: radius * 0.5,
+                child: Container(height: 0.5, color: kSpecular),
+              ),
+              Padding(padding: padding, child: child),
+            ],
+          ),
         ),
       ),
     );
@@ -573,9 +715,14 @@ class PillChip extends StatelessWidget {
             Icon(icon, size: 11, color: color),
             const SizedBox(width: kSp4),
           ],
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -622,7 +769,10 @@ ThemeData buildAppTheme() {
     cardColor: kBgElevated,
     dividerColor: kSeparator,
     dividerTheme: const DividerThemeData(
-        color: kSeparator, thickness: 0.5, space: 0.5),
+      color: kSeparator,
+      thickness: 0.5,
+      space: 0.5,
+    ),
     listTileTheme: const ListTileThemeData(
       titleTextStyle: kBody,
       subtitleTextStyle: kFootnote,
@@ -631,15 +781,20 @@ ThemeData buildAppTheme() {
     snackBarTheme: SnackBarThemeData(
       backgroundColor: kBgElevated2,
       contentTextStyle: kSubhead.copyWith(color: kLabel),
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusCard)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusCard),
+      ),
       behavior: SnackBarBehavior.floating,
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: kBgElevated2,
+      // AlertDialog gives no hook for a BackdropFilter, so it cannot have
+      // the blur GlassSheet does. It compensates by being more opaque —
+      // unreadable is worse than un-glassy.
+      backgroundColor: kSheetBase,
       surfaceTintColor: Colors.transparent,
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusSheet)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kRadiusSheet),
+      ),
       titleTextStyle: kHeadline,
       contentTextStyle: kSubhead,
     ),
@@ -648,24 +803,23 @@ ThemeData buildAppTheme() {
         backgroundColor: kAccent,
         foregroundColor: Colors.black,
         minimumSize: const Size.fromHeight(50),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusCard)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusCard),
+        ),
         textStyle: kHeadline.copyWith(color: Colors.black),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: kAccent,
-        textStyle: kBody,
-      ),
+      style: TextButton.styleFrom(foregroundColor: kAccent, textStyle: kBody),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: kAccent,
         minimumSize: const Size.fromHeight(50),
         side: const BorderSide(color: kSeparator),
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(kRadiusCard)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(kRadiusCard),
+        ),
         textStyle: kBody,
       ),
     ),
@@ -673,7 +827,9 @@ ThemeData buildAppTheme() {
       filled: true,
       fillColor: kBgElevated2,
       contentPadding: const EdgeInsets.symmetric(
-          horizontal: kSp12, vertical: kSp12),
+        horizontal: kSp12,
+        vertical: kSp12,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(kRadiusRow),
         borderSide: BorderSide.none,
@@ -699,7 +855,8 @@ ThemeData buildAppTheme() {
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.all(Colors.white),
       trackColor: WidgetStateProperty.resolveWith(
-          (s) => s.contains(WidgetState.selected) ? kGreen : kBgElevated3),
+        (s) => s.contains(WidgetState.selected) ? kGreen : kBgElevated3,
+      ),
       trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(
@@ -718,11 +875,12 @@ void showCenteredToast(BuildContext context, String message, {Color? color}) {
   late OverlayEntry entry;
 
   entry = OverlayEntry(
-    builder: (ctx) => _CenteredToast(
-      message: message,
-      color: color,
-      onDismiss: () => entry.remove(),
-    ),
+    builder:
+        (ctx) => _CenteredToast(
+          message: message,
+          color: color,
+          onDismiss: () => entry.remove(),
+        ),
   );
 
   overlay.insert(entry);
@@ -777,12 +935,14 @@ class _CenteredToastState extends State<_CenteredToast>
         child: Center(
           child: AnimatedBuilder(
             animation: _opacity,
-            builder: (ctx, child) =>
-                Opacity(opacity: _opacity.value, child: child),
+            builder:
+                (ctx, child) => Opacity(opacity: _opacity.value, child: child),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: kSp32),
               padding: const EdgeInsets.symmetric(
-                  horizontal: kSp20, vertical: kSp16),
+                horizontal: kSp20,
+                vertical: kSp16,
+              ),
               decoration: BoxDecoration(
                 color: kBgElevated2,
                 borderRadius: BorderRadius.circular(kRadiusSheet),

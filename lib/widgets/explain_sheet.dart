@@ -23,13 +23,14 @@ Future<void> showExplainSheet(
     context: context,
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
-    builder: (_) => _ExplainSheet(
-      menuName: menuName,
-      description: description,
-      explanation: explanation,
-      isAiPick: isAiPick,
-      closeRunnerUp: closeRunnerUp,
-    ),
+    builder:
+        (_) => _ExplainSheet(
+          menuName: menuName,
+          description: description,
+          explanation: explanation,
+          isAiPick: isAiPick,
+          closeRunnerUp: closeRunnerUp,
+        ),
   );
 }
 
@@ -61,88 +62,92 @@ class _ExplainSheet extends StatelessWidget {
 
     return SafeArea(
       top: false,
-      child: Container(
-        margin: const EdgeInsets.all(kSp8),
-        padding: const EdgeInsets.fromLTRB(kSp16, kSp12, kSp16, kSp16),
-        decoration: BoxDecoration(
-          color: kBgElevated2,
-          borderRadius: BorderRadius.circular(kRadiusCard + 6),
-          border: Border.all(color: kGlassEdge),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: kSp12),
-                decoration: BoxDecoration(
-                  color: kTextMuted.withAlpha(90),
-                  borderRadius: BorderRadius.circular(2),
+      child: Padding(
+        padding: const EdgeInsets.all(kSp8),
+        child: GlassSheet(
+          radius: kRadiusCard + 6,
+          padding: const EdgeInsets.fromLTRB(kSp16, kSp12, kSp16, kSp16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: kSp12),
+                  decoration: BoxDecoration(
+                    color: kTextMuted.withAlpha(90),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    menuName,
-                    style: const TextStyle(
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      menuName,
+                      style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: kTextPrimary),
+                        color: kTextPrimary,
+                      ),
+                    ),
                   ),
-                ),
-                if (isAiPick)
-                  PillChip(
-                    label: closeRunnerUp != null ? 'AI · tesno' : 'Izbira AI',
-                    color: closeRunnerUp != null
-                        ? kTextMuted
-                        : kAccentMauve.withAlpha(200),
-                  ),
-              ],
-            ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: kSp4),
-              Text(description,
-                  style: const TextStyle(fontSize: 12, color: kTextSecondary)),
-            ],
-            const SizedBox(height: kSp12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  explanation.total >= 0
-                      ? '+${explanation.total.toStringAsFixed(2)}'
-                      : explanation.total.toStringAsFixed(2),
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: explanation.total >= 0 ? accent : kAccentRed,
-                  ),
-                ),
-                const SizedBox(width: kSp8),
-                const Text('skupna ocena',
-                    style: TextStyle(fontSize: 13, color: kTextMuted)),
-              ],
-            ),
-            if (closeRunnerUp != null) ...[
-              const SizedBox(height: kSp8),
-              Text(
-                'Komaj boljša izbira od: $closeRunnerUp. '
-                'Če ti ta teden ne ustreza, kar zamenjaj.',
-                style: kCaption,
+                  if (isAiPick)
+                    PillChip(
+                      label: closeRunnerUp != null ? 'AI · tesno' : 'Izbira AI',
+                      color:
+                          closeRunnerUp != null
+                              ? kTextMuted
+                              : kAccentMauve.withAlpha(200),
+                    ),
+                ],
               ),
+              if (description.isNotEmpty) ...[
+                const SizedBox(height: kSp4),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 12, color: kTextSecondary),
+                ),
+              ],
+              const SizedBox(height: kSp12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    explanation.total >= 0
+                        ? '+${explanation.total.toStringAsFixed(2)}'
+                        : explanation.total.toStringAsFixed(2),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                      color: explanation.total >= 0 ? accent : kAccentRed,
+                    ),
+                  ),
+                  const SizedBox(width: kSp8),
+                  const Text(
+                    'skupna ocena',
+                    style: TextStyle(fontSize: 13, color: kTextMuted),
+                  ),
+                ],
+              ),
+              if (closeRunnerUp != null) ...[
+                const SizedBox(height: kSp8),
+                Text(
+                  'Komaj boljša izbira od: $closeRunnerUp. '
+                  'Če ti ta teden ne ustreza, kar zamenjaj.',
+                  style: kCaption,
+                ),
+              ],
+              const SizedBox(height: kSp12),
+              for (final f in explanation.factors)
+                _FactorRow(factor: f, widest: widest),
+              const SizedBox(height: kSp12),
+              _MaturityNote(maturity: explanation.keywordMaturity),
             ],
-            const SizedBox(height: kSp12),
-            for (final f in explanation.factors)
-              _FactorRow(factor: f, widest: widest),
-            const SizedBox(height: kSp12),
-            _MaturityNote(maturity: explanation.keywordMaturity),
-          ],
+          ),
         ),
       ),
     );
@@ -169,22 +174,24 @@ class _FactorRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(factor.kind.label,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: kTextPrimary)),
+                child: Text(
+                  factor.kind.label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: kTextPrimary,
+                  ),
+                ),
               ),
               Text(
                 positive
                     ? '+${factor.contribution.toStringAsFixed(2)}'
                     : factor.contribution.toStringAsFixed(2),
                 style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: factor.contribution.abs() < 0.005
-                        ? kTextMuted
-                        : color),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: factor.contribution.abs() < 0.005 ? kTextMuted : color,
+                ),
               ),
             ],
           ),
@@ -259,9 +266,14 @@ class _TermChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withAlpha(60)),
       ),
-      child: Text(word,
-          style: TextStyle(
-              fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+      child: Text(
+        word,
+        style: TextStyle(
+          fontSize: 12,
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
 }
@@ -275,11 +287,12 @@ class _MaturityNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pct = (maturity * 100).round();
-    final text = maturity < 0.25
-        ? 'Model ima še malo podatkov, zato se bolj zanaša na to, kateri meni '
-            'običajno izbereš. Sestavine štejejo $pct % svoje končne teže — '
-            'z vsakim tednom več.'
-        : 'Sestavine štejejo $pct % svoje končne teže.';
+    final text =
+        maturity < 0.25
+            ? 'Model ima še malo podatkov, zato se bolj zanaša na to, kateri meni '
+                'običajno izbereš. Sestavine štejejo $pct % svoje končne teže — '
+                'z vsakim tednom več.'
+            : 'Sestavine štejejo $pct % svoje končne teže.';
 
     return Container(
       padding: const EdgeInsets.all(kSp12),

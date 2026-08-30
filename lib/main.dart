@@ -98,19 +98,21 @@ class _MealPickerAppState extends State<MealPickerApp>
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: LiquidBed(
-        child: _onboardingDone == null
-          ? Container(
-              decoration: const BoxDecoration(gradient: kBgGradient),
-              child: const Center(child: CircularProgressIndicator()),
-            )
-          : _onboardingDone!
-              ? MainShell(showTour: _showTour)
-              : OnboardingScreen(
-                    onComplete: () => setState(() {
-                      _onboardingDone = true;
-                      _showTour = true;
-                    }),
-                  ),
+        child:
+            _onboardingDone == null
+                ? Container(
+                  decoration: const BoxDecoration(gradient: kBgGradient),
+                  child: const Center(child: CircularProgressIndicator()),
+                )
+                : _onboardingDone!
+                ? MainShell(showTour: _showTour)
+                : OnboardingScreen(
+                  onComplete:
+                      () => setState(() {
+                        _onboardingDone = true;
+                        _showTour = true;
+                      }),
+                ),
       ),
     );
   }
@@ -292,37 +294,38 @@ class _TabBar extends StatelessWidget {
               child: SizedBox(
                 height: 56,
                 child: Row(
-            children: List.generate(_items.length, (i) {
-              final sel = i == selectedIndex;
-              final color = sel ? kAccent : kLabelTertiary;
-              return Expanded(
-                child: GestureDetector(
-                  key: itemKeys?[i],
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(i),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(_items[i].$1, size: 21, color: color),
-                      const SizedBox(height: 2),
-                      Text(
-                        _items[i].$2,
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 9,
-                          letterSpacing: -0.1,
-                          fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
-                          decoration: TextDecoration.none,
+                  children: List.generate(_items.length, (i) {
+                    final sel = i == selectedIndex;
+                    final color = sel ? kAccent : kLabelTertiary;
+                    return Expanded(
+                      child: GestureDetector(
+                        key: itemKeys?[i],
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onTap(i),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(_items[i].$1, size: 21, color: color),
+                            const SizedBox(height: 2),
+                            Text(
+                              _items[i].$2,
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: color,
+                                fontSize: 9,
+                                letterSpacing: -0.1,
+                                fontWeight:
+                                    sel ? FontWeight.w600 : FontWeight.w400,
+                                decoration: TextDecoration.none,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+                    );
+                  }),
                 ),
               ),
             ),
@@ -332,7 +335,6 @@ class _TabBar extends StatelessWidget {
     );
   }
 }
-
 
 // ── Rating dialog ──
 
@@ -357,9 +359,9 @@ Future<void> showRatingDialog(BuildContext context) async {
   // Find today's submission
   final log = await SubmissionLog.load();
   final todayEntry = log.cast<Map<String, dynamic>?>().firstWhere(
-        (e) => e!['date'] == todayStr && e['menuName'] != 'Odjava',
-        orElse: () => null,
-      );
+    (e) => e!['date'] == todayStr && e['menuName'] != 'Odjava',
+    orElse: () => null,
+  );
 
   if (todayEntry == null) {
     if (context.mounted) {
@@ -375,10 +377,8 @@ Future<void> showRatingDialog(BuildContext context) async {
 
   final rating = await showDialog<int>(
     context: context,
-    builder: (ctx) => _RatingDialog(
-      menuName: menuName,
-      description: description,
-    ),
+    builder:
+        (ctx) => _RatingDialog(menuName: menuName, description: description),
   );
 
   if (rating != null && context.mounted) {
@@ -399,10 +399,7 @@ class _RatingDialog extends StatefulWidget {
   final String menuName;
   final String description;
 
-  const _RatingDialog({
-    required this.menuName,
-    required this.description,
-  });
+  const _RatingDialog({required this.menuName, required this.description});
 
   @override
   State<_RatingDialog> createState() => _RatingDialogState();
@@ -430,120 +427,117 @@ class _RatingDialogState extends State<_RatingDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0x30FFFFFF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: kGlassBorder, width: 0.5),
-              boxShadow: _selected > 0
-                  ? [
-                      BoxShadow(
-                        color: _starColor.withAlpha(30),
-                        blurRadius: 24,
-                        spreadRadius: 0,
-                      ),
-                    ]
+      child: DecoratedBox(
+        // The glow sits outside the sheet so the clip does not eat it.
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          boxShadow:
+              _selected > 0
+                  ? [BoxShadow(color: _starColor.withAlpha(30), blurRadius: 24)]
                   : null,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Oceni malico',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: kTextPrimary)),
-                const SizedBox(height: 12),
-                Text(widget.menuName,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: kAccentAmber,
-                      shadows: [
-                        Shadow(
-                            color: kAccentAmber.withAlpha(80), blurRadius: 6),
-                      ],
-                    )),
-                if (widget.description.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(_cleanDesc(widget.description),
-                      style:
-                          const TextStyle(fontSize: 13, color: kTextSecondary),
-                      textAlign: TextAlign.center),
-                ],
-                const SizedBox(height: 20),
-                // Stars with glow
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (i) {
-                    final star = i + 1;
-                    final active = star <= _selected;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selected = star),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: AnimatedScale(
-                          scale: active ? 1.15 : 1.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: Icon(
-                            active
-                                ? Icons.star_rounded
-                                : Icons.star_outline_rounded,
-                            size: 40,
-                            color: active ? _starColor : kTextMuted,
-                            shadows: active
-                                ? [
+        ),
+        child: GlassSheet(
+          radius: 20,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Oceni malico',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: kTextPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.menuName,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: kAccentAmber,
+                  shadows: [
+                    Shadow(color: kAccentAmber.withAlpha(80), blurRadius: 6),
+                  ],
+                ),
+              ),
+              if (widget.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _cleanDesc(widget.description),
+                  style: const TextStyle(fontSize: 13, color: kTextSecondary),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: 20),
+              // Stars with glow
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (i) {
+                  final star = i + 1;
+                  final active = star <= _selected;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selected = star),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: AnimatedScale(
+                        scale: active ? 1.15 : 1.0,
+                        duration: const Duration(milliseconds: 150),
+                        child: Icon(
+                          active
+                              ? Icons.star_rounded
+                              : Icons.star_outline_rounded,
+                          size: 40,
+                          color: active ? _starColor : kTextMuted,
+                          shadows:
+                              active
+                                  ? [
                                     Shadow(
                                       color: _starColor.withAlpha(150),
                                       blurRadius: 12,
                                     ),
                                   ]
-                                : null,
-                          ),
+                                  : null,
                         ),
                       ),
-                    );
-                  }),
-                ),
-                if (_selected > 0) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _ratingLabel(_selected),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: _starColor,
-                      shadows: [
-                        Shadow(
-                            color: _starColor.withAlpha(100), blurRadius: 6),
-                      ],
                     ),
+                  );
+                }),
+              ),
+              if (_selected > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _ratingLabel(_selected),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _starColor,
+                    shadows: [
+                      Shadow(color: _starColor.withAlpha(100), blurRadius: 6),
+                    ],
                   ),
-                ],
-                const SizedBox(height: 20),
-                // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Prekliči'),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: _selected > 0
-                          ? () => Navigator.pop(context, _selected)
-                          : null,
-                      child: const Text('Shrani'),
-                    ),
-                  ],
                 ),
               ],
-            ),
+              const SizedBox(height: 20),
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Prekliči'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed:
+                        _selected > 0
+                            ? () => Navigator.pop(context, _selected)
+                            : null,
+                    child: const Text('Shrani'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -587,36 +581,78 @@ class _TourOverlay extends StatelessWidget {
 
   // Steps 0-5: nav bar spotlight steps
   static const _navSteps = [
-    (Icons.restaurant_menu, 'Meni',
-        'Tedenski meni z AI priporočili. Izberi obrok za vsak dan in oddaj.'),
-    (Icons.fitness_center, 'Trening',
-        'Treniraj AI z izbiranjem med jedmi. Več kot treniraš, boljše napovedi.'),
-    (Icons.bar_chart, 'Statistika',
-        'Pregled statistike tvojih izbir in točnosti AI napovedi.'),
-    (Icons.favorite, 'Zdravje',
-        'Zdravstvena ocena jedilnika na podlagi sestavin.'),
-    (Icons.history, 'Dnevnik',
-        'Zgodovina vseh oddanih izbir in ocen obrokov.'),
-    (Icons.settings, 'Nastavitve',
-        'Nastavi všečne/nevšečne besede in vrstni red menijev.'),
+    (
+      Icons.restaurant_menu,
+      'Meni',
+      'Tedenski meni z AI priporočili. Izberi obrok za vsak dan in oddaj.',
+    ),
+    (
+      Icons.fitness_center,
+      'Trening',
+      'Treniraj AI z izbiranjem med jedmi. Več kot treniraš, boljše napovedi.',
+    ),
+    (
+      Icons.bar_chart,
+      'Statistika',
+      'Pregled statistike tvojih izbir in točnosti AI napovedi.',
+    ),
+    (
+      Icons.favorite,
+      'Zdravje',
+      'Zdravstvena ocena jedilnika na podlagi sestavin.',
+    ),
+    (Icons.history, 'Dnevnik', 'Zgodovina vseh oddanih izbir in ocen obrokov.'),
+    (
+      Icons.settings,
+      'Nastavitve',
+      'Nastavi všečne/nevšečne besede in vrstni red menijev.',
+    ),
   ];
 
   // Steps 6-12: centered feature explanation cards
   static const _featureSteps = [
-    (Icons.auto_awesome, kAccentMauve, 'AI priporočilo',
-        'Vijolična zvezdica označuje jed, ki jo AI priporoča na podlagi tvojega treninga in nastavitev.'),
-    (Icons.favorite, kAccentGreen, 'Zdravstvena ocena',
-        'Zelena = zdravo (7–10), rumena = srednje (4–6), rdeča = manj zdravo (1–3). Zlata/srebrna/bronasta značka označuje najboljšo jed dneva.'),
-    (Icons.check_circle, kAccentYellow, 'eA značka',
-        'Rumena \'eA\' značka pomeni, da je ta jed že naročena na eAsistent.'),
-    (Icons.lock, kAccentRed, 'Zaklenjen dan',
-        'Ključavnica pomeni, da je eAsistent zaklenil izbiro za ta dan. Meni 2–8 so zamrznjeni, Meni 1 in Odjava sta še na voljo.'),
-    (Icons.event_busy, kAccentAmber, 'Odsotnost',
-        'Če te ne bo v šoli, tapni gumb za odsotnost. Odjava se pošlje za izbrane dni, tako da ne zapravljaš obrokov.'),
-    (Icons.star_rounded, kAccentYellow, 'Ocena obroka',
-        'Vsak dan ob 13:00 dobiš obvestilo za oceno malice. Tvoje ocene pomagajo AI-ju izboljšati prihodnje napovedi.'),
-    (Icons.schedule, kAccentTeal, 'Samodejna oddaja',
-        'Ob ponedeljkih ob 18:00 AI samodejno odda najboljše izbire za naslednji teden. Ob 16:00 dobiš opomnik, da lahko še preveriš.'),
+    (
+      Icons.auto_awesome,
+      kAccentMauve,
+      'AI priporočilo',
+      'Vijolična zvezdica označuje jed, ki jo AI priporoča na podlagi tvojega treninga in nastavitev.',
+    ),
+    (
+      Icons.favorite,
+      kAccentGreen,
+      'Zdravstvena ocena',
+      'Zelena = zdravo (7–10), rumena = srednje (4–6), rdeča = manj zdravo (1–3). Zlata/srebrna/bronasta značka označuje najboljšo jed dneva.',
+    ),
+    (
+      Icons.check_circle,
+      kAccentYellow,
+      'eA značka',
+      'Rumena \'eA\' značka pomeni, da je ta jed že naročena na eAsistent.',
+    ),
+    (
+      Icons.lock,
+      kAccentRed,
+      'Zaklenjen dan',
+      'Ključavnica pomeni, da je eAsistent zaklenil izbiro za ta dan. Meni 2–8 so zamrznjeni, Meni 1 in Odjava sta še na voljo.',
+    ),
+    (
+      Icons.event_busy,
+      kAccentAmber,
+      'Odsotnost',
+      'Če te ne bo v šoli, tapni gumb za odsotnost. Odjava se pošlje za izbrane dni, tako da ne zapravljaš obrokov.',
+    ),
+    (
+      Icons.star_rounded,
+      kAccentYellow,
+      'Ocena obroka',
+      'Vsak dan ob 13:00 dobiš obvestilo za oceno malice. Tvoje ocene pomagajo AI-ju izboljšati prihodnje napovedi.',
+    ),
+    (
+      Icons.schedule,
+      kAccentTeal,
+      'Samodejna oddaja',
+      'Ob ponedeljkih ob 18:00 AI samodejno odda najboljše izbire za naslednji teden. Ob 16:00 dobiš opomnik, da lahko še preveriš.',
+    ),
   ];
 
   @override
@@ -675,9 +711,7 @@ class _TourOverlay extends StatelessWidget {
         child: Stack(
           children: [
             // Full dark overlay (no cutout)
-            Positioned.fill(
-              child: Container(color: const Color(0xCC000000)),
-            ),
+            Positioned.fill(child: Container(color: const Color(0xCC000000))),
             // Centered card
             Center(
               child: Padding(
@@ -691,7 +725,12 @@ class _TourOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildTooltipCard(IconData icon, String title, String desc, Color accent) {
+  Widget _buildTooltipCard(
+    IconData icon,
+    String title,
+    String desc,
+    Color accent,
+  ) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
@@ -702,33 +741,32 @@ class _TourOverlay extends StatelessWidget {
             color: const Color(0x30FFFFFF),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: kGlassBorder, width: 0.5),
-            boxShadow: [
-              BoxShadow(
-                color: accent.withAlpha(30),
-                blurRadius: 20,
-              ),
-            ],
+            boxShadow: [BoxShadow(color: accent.withAlpha(30), blurRadius: 20)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 32, color: accent),
               const SizedBox(height: 8),
-              Text(title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: kTextPrimary,
-                    decoration: TextDecoration.none,
-                  )),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: kTextPrimary,
+                  decoration: TextDecoration.none,
+                ),
+              ),
               const SizedBox(height: 6),
-              Text(desc,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: kTextSecondary,
-                    decoration: TextDecoration.none,
-                  )),
+              Text(
+                desc,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: kTextSecondary,
+                  decoration: TextDecoration.none,
+                ),
+              ),
               const SizedBox(height: 16),
               // Step progress
               _buildStepIndicator(),
@@ -738,15 +776,19 @@ class _TourOverlay extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: onSkip,
-                    child: const Text('Preskoči',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: kTextMuted,
-                          decoration: TextDecoration.none,
-                        )),
+                    child: const Text(
+                      'Preskoči',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: kTextMuted,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
                   ),
                   Text(
-                    step < _totalSteps - 1 ? 'Tapni za naprej' : 'Tapni za konec',
+                    step < _totalSteps - 1
+                        ? 'Tapni za naprej'
+                        : 'Tapni za konec',
                     style: const TextStyle(
                       fontSize: 13,
                       color: kAccentAmber,
@@ -776,9 +818,10 @@ class _TourOverlay extends StatelessWidget {
             height: 6,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: i == step
-                  ? kAccentAmber
-                  : i < step
+              color:
+                  i == step
+                      ? kAccentAmber
+                      : i < step
                       ? kAccentAmber.withAlpha(100)
                       : kTextMuted.withAlpha(60),
               borderRadius: BorderRadius.circular(3),
@@ -798,9 +841,10 @@ class _TourOverlay extends StatelessWidget {
             height: 6,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: i == step
-                  ? kAccentAmber
-                  : i < step
+              color:
+                  i == step
+                      ? kAccentAmber
+                      : i < step
                       ? kAccentAmber.withAlpha(100)
                       : kTextMuted.withAlpha(60),
               borderRadius: BorderRadius.circular(3),
@@ -820,10 +864,11 @@ class _SpotlightPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..color = const Color(0xCC000000);
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..addOval(Rect.fromCircle(center: center, radius: radius))
-      ..fillType = PathFillType.evenOdd;
+    final path =
+        Path()
+          ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+          ..addOval(Rect.fromCircle(center: center, radius: radius))
+          ..fillType = PathFillType.evenOdd;
     canvas.drawPath(path, paint);
   }
 

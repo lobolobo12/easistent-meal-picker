@@ -287,7 +287,13 @@ These require a `config.json` in the project root with eAsistent credentials: `{
 ## Conventions
 
 - Catppuccin Mocha dark theme throughout (glassmorphism via BackdropFilter)
-- Reusable glass widgets: GlassCard, GlassBar, PillChip (defined in theme.dart)
+- Reusable glass widgets: GlassCard, GlassBar, GlassSheet, PillChip (theme.dart)
+- **Anything floating over the whole screen uses `GlassSheet`.** A translucent
+  fill with no `BackdropFilter` is unreadable over the bed, which is
+  deliberately colourful — the score explanation shipped that way. GlassSheet
+  carries a real blur and a near-opaque *dark* base: a thin white fill
+  lightens the colour behind without hiding it. `AlertDialog` gives no hook
+  for a blur, so `dialogTheme` compensates with opacity instead
 - Floating glass pill nav bar with 6 tabs: Meni, Trening, Statistika, Zdravje, Dnevnik, Nastavitve
 - All notification/scheduler operations wrapped in try-catch (non-fatal)
 - Persisted files go through `AppFiles` constants and `JsonFile`, never a
