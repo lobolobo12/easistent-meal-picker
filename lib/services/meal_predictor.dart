@@ -343,6 +343,14 @@ class MealPredictor {
     };
   }
 
+  /// Normalized menu names the model has any history for.
+  ///
+  /// A new school year renames and reshuffles menus. `normalizeMenuName`
+  /// absorbs a changed price, but a menu that is genuinely new — or renamed
+  /// beyond the bracket — carries no history at all, and the model will
+  /// quietly score it 0 rather than admit it has never seen it.
+  Set<String> get knownMenus => _menuTypeScores.keys.toSet();
+
   /// How many tokens survived into the keyword model. Used by the
   /// evaluation harness to show what a frequency cutoff costs.
   int get vocabularySize => _keywordScores.length;

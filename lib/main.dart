@@ -205,7 +205,7 @@ class _MainShellState extends State<MainShell> {
           body: IndexedStack(
             index: _currentIndex,
             children: [
-              MenuScreen(key: _menuKey),
+              MenuScreen(key: _menuKey, onOpenTraining: () => _onTabChanged(1)),
               const TrainingScreen(),
               const StatsScreen(),
               const HealthScreen(),

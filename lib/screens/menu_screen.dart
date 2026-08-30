@@ -29,7 +29,10 @@ const _cancelId = '__odjava__';
 const _navBarPad = 104.0;
 
 class MenuScreen extends StatefulWidget {
-  const MenuScreen({super.key});
+  /// Switches the shell to the Trening tab. Null in contexts without one.
+  final VoidCallback? onOpenTraining;
+
+  const MenuScreen({super.key, this.onOpenTraining});
 
   @override
   State<MenuScreen> createState() => MenuScreenState();
@@ -61,6 +64,10 @@ class MenuScreenState extends State<MenuScreen> {
 
   /// Runner-up label per close day, for the explanation sheet.
   final Map<String, String> _aiRunnerUp = {};
+
+  /// Menus in this week that the model has no history for at all.
+  final Set<String> _unknownMenus = {};
+  bool _unknownMenusDismissed = false;
   final Map<String, String> _selections = {};
   // Scores: "date|menuId" -> score
   final Map<String, double> _scores = {};
@@ -233,6 +240,7 @@ class MenuScreenState extends State<MenuScreen> {
     _aiPicks.clear();
     _aiCloseDates.clear();
     _aiRunnerUp.clear();
+    _unknownMenus.clear();
     _selections.clear();
     _scores.clear();
 
@@ -261,6 +269,19 @@ class MenuScreenState extends State<MenuScreen> {
             if (ranking.runnerUpName != null) {
               _aiRunnerUp[date] = ranking.runnerUpName!;
             }
+          }
+        }
+      }
+
+      // A menu the model has never seen scores 0 and looks merely mediocre,
+      // which is indistinguishable from one it has learned to dislike. Worth
+      // saying out loud, especially in September.
+      final predictor = _predictor;
+      if (predictor != null && predictor.knownMenus.isNotEmpty) {
+        for (final opt in options) {
+          if (opt.menuName.isEmpty) continue;
+          if (!predictor.knownMenus.contains(normalizeMenuName(opt.menuName))) {
+            _unknownMenus.add(opt.menuName);
           }
         }
       }
@@ -1159,18 +1180,31 @@ class MenuScreenState extends State<MenuScreen> {
       itemCount: sortedDates.length + 1,
       itemBuilder: (context, index) {
         if (index == 0) {
-          return const Padding(
-            padding: EdgeInsets.fromLTRB(6, 0, 6, kSp8),
-            child: Row(
-              children: [
-                Icon(Icons.touch_app_outlined, size: 13, color: kTextMuted),
-                SizedBox(width: 6),
-                Expanded(
-                  child: Text('Pridrži jed za razlago ocene',
-                      style: kCaption),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_unknownMenus.isNotEmpty && !_unknownMenusDismissed)
+                _NewMenusBanner(
+                  menus: _unknownMenus.toList()..sort(),
+                  onTrain: widget.onOpenTraining,
+                  onDismiss: () =>
+                      setState(() => _unknownMenusDismissed = true),
                 ),
-              ],
-            ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(6, 0, 6, kSp8),
+                child: Row(
+                  children: [
+                    Icon(Icons.touch_app_outlined,
+                        size: 13, color: kTextMuted),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text('Pridrži jed za razlago ocene',
+                          style: kCaption),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           );
         }
         final date = sortedDates[index - 1];
@@ -1579,6 +1613,81 @@ class _MealCard extends StatelessWidget {
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: color,
+      ),
+    );
+  }
+}
+
+/// Shown when this week contains menus the model has never seen.
+///
+/// The trigger is a new school year: menus get renamed and reshuffled, and
+/// preferences learned over months quietly stop applying to anything on the
+/// screen. Nothing in the UI used to say so — the new menu simply scored 0.
+class _NewMenusBanner extends StatelessWidget {
+  final List<String> menus;
+  final VoidCallback? onTrain;
+  final VoidCallback onDismiss;
+
+  const _NewMenusBanner({
+    required this.menus,
+    required this.onTrain,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: kSp8),
+      child: GlassCard(
+        borderColor: kAccentYellow,
+        padding: const EdgeInsets.all(kSp12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.auto_awesome_outlined,
+                    size: 16, color: kAccentYellow),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text(
+                    'Novi meniji',
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: kTextPrimary),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: onDismiss,
+                  child: const Padding(
+                    padding: EdgeInsets.only(left: kSp8),
+                    child: Icon(Icons.close, size: 16, color: kTextMuted),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: kSp4),
+            Text(
+              menus.length == 1
+                  ? 'Model nima zgodovine za ${menus.first}, zato ga ocenjuje '
+                      'nevtralno.'
+                  : 'Model nima zgodovine za ${menus.length} menijev: '
+                      '${menus.join(", ")}. Ocenjuje jih nevtralno.',
+              style: kCaption,
+            ),
+            if (onTrain != null) ...[
+              const SizedBox(height: kSp8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonal(
+                  onPressed: onTrain,
+                  child: const Text('Treniraj'),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

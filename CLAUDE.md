@@ -137,6 +137,17 @@ top-1 and mean rank per variant. Two things it has already caught:
   you accepted it is not. **Unmeasured** — the stored data never recorded
   which days were corrections, so there is no history to evaluate it against
 
+### New Menu Detection (menu_screen `_NewMenusBanner`)
+- `MealPredictor.knownMenus` exposes the normalized menus the model has any
+  history for
+- A menu the model has never seen scores 0, which looks identical to one it
+  has learned to dislike. The banner names them and offers the Trening tab
+- Stays quiet when the model knows nothing at all, since onboarding already
+  covers a fresh install
+- Built for the school-year rollover: `normalizeMenuName` absorbs a changed
+  price ("Meni 5 (XXL +0,70€)" → "(XXL+0,80 EUR)"), but a genuine rename
+  strands months of preference silently
+
 ### Pick Confidence (MealPredictor.rankDay)
 - Returns the winner, the runner-up, and the margin as a fraction of the
   day's score range
@@ -202,7 +213,7 @@ iOS differences from Android, all in `scheduler_service.dart`:
 ## Tests
 
 ```bash
-flutter test    # 117 tests, no device and no live account needed
+flutter test    # 123 tests, no device and no live account needed
 ```
 
 - `test/auto_submit_test.dart` — **the Monday rehearsal.** Drives the real
