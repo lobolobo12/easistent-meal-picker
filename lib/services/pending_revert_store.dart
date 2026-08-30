@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
+import 'app_files.dart';
 
 /// Persistent record of probe reverts that failed mid-flight.
 ///
@@ -22,26 +19,10 @@ import 'package:path_provider/path_provider.dart';
 ///     "recordedAt": "ISO-8601"
 ///   }
 class PendingRevertStore {
-  static File? _cachedFile;
-
-  static Future<File> _getFile() async {
-    if (_cachedFile != null) return _cachedFile!;
-    final dir = await getApplicationDocumentsDirectory();
-    _cachedFile = File('${dir.path}/pending_reverts.json');
-    return _cachedFile!;
-  }
+  static const _file = JsonFile(AppFiles.pendingReverts);
 
   /// Load all pending reverts. Empty list on missing/corrupt file.
-  static Future<List<Map<String, dynamic>>> load() async {
-    final file = await _getFile();
-    if (!file.existsSync()) return [];
-    try {
-      final data = jsonDecode(await file.readAsString()) as List<dynamic>;
-      return data.cast<Map<String, dynamic>>();
-    } catch (_) {
-      return [];
-    }
-  }
+  static Future<List<Map<String, dynamic>>> load() => _file.readList();
 
   /// Record a failed revert. Deduplicates by date (newest wins).
   static Future<void> add(Map<String, dynamic> entry) async {
@@ -51,14 +32,9 @@ class PendingRevertStore {
     await saveAll(list);
   }
 
-  /// Replace the entire store. Deletes the file if empty.
+  /// Replace the entire store. Deletes the file when empty.
   static Future<void> saveAll(List<Map<String, dynamic>> list) async {
-    final file = await _getFile();
-    if (list.isEmpty) {
-      if (file.existsSync()) await file.delete();
-      return;
-    }
-    await file.writeAsString(
-        const JsonEncoder.withIndent('  ').convert(list));
+    if (list.isEmpty) return _file.delete();
+    return _file.write(list);
   }
 }

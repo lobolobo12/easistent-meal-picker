@@ -1,16 +1,13 @@
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
+import 'app_files.dart';
 
 /// Simple flag to track whether first-launch onboarding has been completed.
 class OnboardingStore {
-  static Future<bool> isComplete() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/onboarding_complete.txt').existsSync();
-  }
+  static const _marker = MarkerFile(AppFiles.onboardingComplete);
 
-  static Future<void> markComplete() async {
-    final dir = await getApplicationDocumentsDirectory();
-    await File('${dir.path}/onboarding_complete.txt').writeAsString('done');
-  }
+  static Future<bool> isComplete() async => (await _marker.read()) != null;
+
+  static Future<void> markComplete() => _marker.write('done');
+
+  /// Used by the reset flow in settings.
+  static Future<void> clear() => _marker.delete();
 }

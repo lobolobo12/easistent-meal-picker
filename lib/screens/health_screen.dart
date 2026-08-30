@@ -5,16 +5,7 @@ import '../services/credentials_store.dart';
 import '../services/easistent_client.dart';
 import '../services/health_scorer.dart';
 import '../theme.dart';
-
-const _dayNames = <int, String>{
-  1: 'Ponedeljek',
-  2: 'Torek',
-  3: 'Sreda',
-  4: 'Četrtek',
-  5: 'Petek',
-  6: 'Sobota',
-  7: 'Nedelja',
-};
+import '../util/dates.dart';
 
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
@@ -348,8 +339,7 @@ class _HealthScreenState extends State<HealthScreen> {
 
   Widget _buildDayCard(String date) {
     final options = _menu[date]!;
-    final d = DateTime.parse(date);
-    final dayLabel = '${_dayNames[d.weekday] ?? ''}, ${d.day}. ${d.month}.';
+    final dayLabel = formatDayDate(date);
     final top3 = _topThree[date] ?? [];
     final orderedId = _orderedPicks[date];
 

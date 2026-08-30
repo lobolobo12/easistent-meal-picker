@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,13 +15,31 @@ import '../models/meal_option.dart';
 /// 4. Parse accessToken, activeChildId from the ses cookie JSON
 /// 5. Use these as headers for subsequent requests
 class EAsistentClient {
-  static const _loginUrl = 'https://www.easistent.com/p/ajax_prijava';
+  static const defaultOrigin = 'https://www.easistent.com';
+
+  /// Server root. Overridable so the test suite can point the client at a
+  /// local stand-in and exercise the real cookie, redirect and submit paths
+  /// without touching a live account — see `test/easistent_client_test.dart`.
+  final String origin;
+
+  String get _loginUrl => '$origin/p/ajax_prijava';
   // /prehrana now 307s here; naming the real target saves a round-trip.
-  static const _mealPageUrl = 'https://www.easistent.com/prehrana/dijaki';
-  static const _mealListUrl =
-      'https://www.easistent.com/dijaki/ajax_prehrana_obroki_seznam';
-  static const _mealSelectUrl =
-      'https://www.easistent.com/dijaki/ajax_prehrana_obroki_prijava';
+  String get _mealPageUrl => '$origin/prehrana/dijaki';
+  String get _mealListUrl => '$origin/dijaki/ajax_prehrana_obroki_seznam';
+  String get _mealSelectUrl => '$origin/dijaki/ajax_prehrana_obroki_prijava';
+
+  /// Per-request ceiling. Without this every call could hang forever: the
+  /// Monday 18:00 alarm gets a few seconds of wall clock from the OS, and a
+  /// socket that never answers meant the submit silently never happened.
+  final Duration requestTimeout;
+
+  /// Ceiling on one login/fetch/submit including all of its redirect hops.
+  final Duration totalTimeout;
+
+  /// eAsistent's login bounces through two or three hops. Ten is generous
+  /// and still terminates: the loop had no cap at all, so a server-side
+  /// redirect cycle span forever.
+  static const _maxRedirects = 10;
 
   final String username;
   final String password;
@@ -40,7 +59,13 @@ class EAsistentClient {
   /// [accessToken]: eAsistent no longer exposes it (see [login]).
   bool get isLoggedIn => _loggedIn;
 
-  EAsistentClient({required this.username, required this.password}) {
+  EAsistentClient({
+    required this.username,
+    required this.password,
+    this.origin = defaultOrigin,
+    this.requestTimeout = const Duration(seconds: 20),
+    this.totalTimeout = const Duration(seconds: 45),
+  }) {
     _httpClient = HttpClient()
       ..autoUncompress = true
       // Don't auto-follow redirects so we can capture cookies at each hop
@@ -176,21 +201,14 @@ class EAsistentClient {
     required String menuId,
     required String locationId,
     String mealType = 'malica',
-  }) async {
-    final resp = await _post(_mealSelectUrl, {
-      'tip_prehrane': mealType,
-      'id_meni': menuId,
-      'datum': date,
-      'akcija': 'prijava',
-      'id_lokacija': locationId,
-    });
-    final data = jsonDecode(resp.body);
-    if (data['status'] == 'ok') return true;
-    if (data['status'] == 'logout') {
-      throw Exception('Session expired, please login again');
-    }
-    throw Exception('Meal selection failed: ${data['errfields']}');
-  }
+  }) =>
+      _setMeal(
+        date: date,
+        menuId: menuId,
+        locationId: locationId,
+        mealType: mealType,
+        action: 'prijava',
+      );
 
   /// Cancel (odjava) an existing meal order for a given date.
   Future<bool> cancelMeal({
@@ -198,20 +216,57 @@ class EAsistentClient {
     required String menuId,
     required String locationId,
     String mealType = 'malica',
+  }) =>
+      _setMeal(
+        date: date,
+        menuId: menuId,
+        locationId: locationId,
+        mealType: mealType,
+        action: 'odjava',
+      );
+
+  /// Both meal actions hit the same endpoint and differ only in `akcija`.
+  Future<bool> _setMeal({
+    required String date,
+    required String menuId,
+    required String locationId,
+    required String mealType,
+    required String action,
   }) async {
     final resp = await _post(_mealSelectUrl, {
       'tip_prehrane': mealType,
       'id_meni': menuId,
       'datum': date,
-      'akcija': 'odjava',
+      'akcija': action,
       'id_lokacija': locationId,
     });
-    final data = jsonDecode(resp.body);
-    if (data['status'] == 'ok') return true;
-    if (data['status'] == 'logout') {
-      throw Exception('Session expired, please login again');
+
+    // An expired session answers with the HTML login page, not JSON. The
+    // unguarded `jsonDecode` here surfaced that as a bare FormatException —
+    // the same opaque failure the login path used to produce, and on the
+    // one call that actually places an order.
+    final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(resp.body) as Map<String, dynamic>;
+    } catch (_) {
+      if (resp.statusCode == 200 && resp.body.contains('prijava')) {
+        throw SessionExpiredException();
+      }
+      throw Exception(
+          'Meal $action failed: server did not return JSON '
+          '(HTTP ${resp.statusCode}). ${_bodyHead(resp.body)}');
     }
-    throw Exception('Meal cancellation failed: ${data['errfields']}');
+
+    if (data['status'] == 'ok') return true;
+    if (data['status'] == 'logout') throw SessionExpiredException();
+    throw Exception('Meal $action failed: ${data['errfields']}');
+  }
+
+  static String _bodyHead(String body) {
+    final trimmed = body.trim();
+    return trimmed.length > 120
+        ? 'Body starts: "${trimmed.substring(0, 120)}..."'
+        : 'Body: "$trimmed"';
   }
 
   /// Parse meal table HTML into a map of date → list of meal options.
@@ -303,91 +358,77 @@ class EAsistentClient {
   }
 
   // ── HTTP helpers with manual cookie handling ──
+  //
+  // `_get` and `_post` were near-identical: both built a request, attached
+  // cookies and headers, then ran the same twenty-line redirect loop. Only
+  // the first request differed. Sharing `_send` means a fix to the redirect
+  // handling — the cap and the timeouts below — lands on both paths.
 
-  Future<_Response> _get(String url) async {
-    final uri = Uri.parse(url);
-    final request = await _httpClient.getUrl(uri);
-    request.followRedirects = false;
+  Future<_Response> _get(String url) => _send(url);
 
-    // Attach cookies for this domain
-    _applyCookies(request, uri);
+  Future<_Response> _post(String url, Map<String, String> body) =>
+      _send(url, body: body);
 
-    // Set auth headers
-    _headers.forEach((k, v) => request.headers.set(k, v));
+  Future<_Response> _send(String url, {Map<String, String>? body}) async {
+    Future<_Response> run() async {
+      var currentUri = Uri.parse(url);
+      var response = await _open(currentUri, body: body);
+      _storeCookies(response, currentUri);
 
-    var response = await request.close();
+      // Redirects are followed by hand so cookies can be captured at each
+      // hop — the `ses` cookie is only set partway through the login bounce.
+      var hops = 0;
+      while (response.isRedirect ||
+          (response.statusCode >= 300 && response.statusCode < 400)) {
+        if (++hops > _maxRedirects) {
+          throw Exception(
+              'Too many redirects (>$_maxRedirects) starting at $url');
+        }
+        final location = response.headers.value('location');
+        if (location == null) break;
 
-    // Store cookies from response
-    _storeCookies(response, uri);
+        final redirectUri = currentUri.resolve(location);
+        await response.drain<void>();
 
-    var currentUri = uri;
+        // A redirect is always followed with GET: the login POST answers
+        // 302 to a page, and re-POSTing the credentials to it would be wrong.
+        response = await _open(redirectUri);
+        currentUri = redirectUri;
+        _storeCookies(response, currentUri);
+      }
 
-    // Follow redirects manually to capture cookies at each hop
-    while (response.isRedirect ||
-        (response.statusCode >= 300 && response.statusCode < 400)) {
-      final location = response.headers.value('location');
-      if (location == null) break;
-
-      final redirectUri = currentUri.resolve(location);
-      await response.drain<void>();
-
-      final redirectReq = await _httpClient.getUrl(redirectUri);
-      redirectReq.followRedirects = false;
-      _applyCookies(redirectReq, redirectUri);
-      _headers.forEach((k, v) => redirectReq.headers.set(k, v));
-      currentUri = redirectUri;
-
-      response = await redirectReq.close();
-      _storeCookies(response, redirectUri);
+      final text = await response.transform(utf8.decoder).join();
+      return _Response(response.statusCode, text);
     }
 
-    final body = await response.transform(utf8.decoder).join();
-    return _Response(response.statusCode, body);
+    try {
+      return await run().timeout(totalTimeout);
+    } on TimeoutException {
+      throw Exception(
+          'Request to $url timed out after ${totalTimeout.inSeconds}s');
+    }
   }
 
-  Future<_Response> _post(String url, Map<String, String> body) async {
-    final uri = Uri.parse(url);
-    final request = await _httpClient.postUrl(uri);
+  /// Issue a single request — no redirect following, no timeout on the body.
+  Future<HttpClientResponse> _open(Uri uri, {Map<String, String>? body}) async {
+    final request = body == null
+        ? await _httpClient.getUrl(uri)
+        : await _httpClient.postUrl(uri);
     request.followRedirects = false;
 
     _applyCookies(request, uri);
     _headers.forEach((k, v) => request.headers.set(k, v));
 
-    request.headers.contentType =
-        ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-
-    final encoded = body.entries
-        .map((e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-    request.write(encoded);
-
-    var response = await request.close();
-    _storeCookies(response, uri);
-
-    var currentUri = uri;
-
-    // Follow redirects manually
-    while (response.isRedirect ||
-        (response.statusCode >= 300 && response.statusCode < 400)) {
-      final location = response.headers.value('location');
-      if (location == null) break;
-
-      final redirectUri = currentUri.resolve(location);
-      await response.drain<void>();
-
-      final redirectReq = await _httpClient.getUrl(redirectUri);
-      redirectReq.followRedirects = false;
-      _applyCookies(redirectReq, redirectUri);
-      _headers.forEach((k, v) => redirectReq.headers.set(k, v));
-      currentUri = redirectUri;
-
-      response = await redirectReq.close();
-      _storeCookies(response, redirectUri);
+    if (body != null) {
+      request.headers.contentType =
+          ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
+      request.write(body.entries
+          .map((e) =>
+              '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&'));
     }
 
-    final responseBody = await response.transform(utf8.decoder).join();
-    return _Response(response.statusCode, responseBody);
+    return request.close().timeout(requestTimeout);
   }
 
   void _applyCookies(HttpClientRequest request, Uri uri) {
@@ -411,6 +452,22 @@ class EAsistentClient {
       _cookies[cleanDomain]!.add(cookie);
     }
   }
+
+  /// Release the underlying socket pool. The client was never closed, so
+  /// each login leaked its keep-alive connections until the isolate died.
+  void close() {
+    _httpClient.close(force: true);
+    _loggedIn = false;
+  }
+}
+
+/// The session cookies are no longer valid; the caller should re-login.
+///
+/// Previously signalled by a plain `Exception('Session expired, ...')`, which
+/// callers had to string-match to distinguish from a real failure.
+class SessionExpiredException implements Exception {
+  @override
+  String toString() => 'Session expired, please login again';
 }
 
 class _Response {

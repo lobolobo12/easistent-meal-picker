@@ -17,16 +17,8 @@ import '../services/training_store.dart';
 import '../services/health_scorer.dart';
 import '../services/widget_service.dart';
 import '../theme.dart';
-
-const _dayNames = <int, String>{
-  1: 'Ponedeljek',
-  2: 'Torek',
-  3: 'Sreda',
-  4: 'Četrtek',
-  5: 'Petek',
-  6: 'Sobota',
-  7: 'Nedelja',
-};
+import '../util/dates.dart';
+import '../widgets/explain_sheet.dart';
 
 /// Sentinel value in _selections meaning "cancel meal for this day".
 const _cancelId = '__odjava__';
@@ -505,6 +497,19 @@ class MenuScreenState extends State<MenuScreen> {
     setState(() => _selections[date] = option.menuId);
   }
 
+  /// Long-press on any option: show what the score is made of.
+  void _onExplainTap(String date, MealOption option) {
+    final predictor = _predictor;
+    if (predictor == null) return;
+    showExplainSheet(
+      context,
+      menuName: option.menuName,
+      description: option.description,
+      explanation: predictor.explain(option.menuName, option.description),
+      isAiPick: _aiPicks[date] == option.menuId,
+    );
+  }
+
   void _onCancelTap(String date) {
     if (!_isDaySelectable(date)) return;
 
@@ -554,10 +559,10 @@ class MenuScreenState extends State<MenuScreen> {
       final lockedLines = lockedChanges.map((e) {
         final options = _menu[e.key]!;
         if (e.value == _cancelId) {
-          return '${_formatDateShort(e.key)}: Odjava';
+          return '${formatDayShort(e.key)}: Odjava';
         }
         final newOpt = options.firstWhere((o) => o.menuId == e.value);
-        return '${_formatDateShort(e.key)}: ${newOpt.menuName}';
+        return '${formatDayShort(e.key)}: ${newOpt.menuName}';
       }).toList();
 
       final lockedConfirmed = await showDialog<bool>(
@@ -599,13 +604,13 @@ class MenuScreenState extends State<MenuScreen> {
           options.where((o) => o.status == 'ordered').firstOrNull;
 
       if (e.value == _cancelId) {
-        return '${_formatDateShort(e.key)}: Odjava (${orderedOpt?.menuName ?? '?'})';
+        return '${formatDayShort(e.key)}: Odjava (${orderedOpt?.menuName ?? '?'})';
       }
       final newOpt = options.firstWhere((o) => o.menuId == e.value);
       if (orderedOpt != null) {
-        return '${_formatDateShort(e.key)}: ${orderedOpt.menuName} -> ${newOpt.menuName}';
+        return '${formatDayShort(e.key)}: ${orderedOpt.menuName} -> ${newOpt.menuName}';
       }
-      return '${_formatDateShort(e.key)}: ${newOpt.menuName}';
+      return '${formatDayShort(e.key)}: ${newOpt.menuName}';
     }).toList();
 
     final confirmed = await showDialog<bool>(
@@ -753,17 +758,6 @@ class MenuScreenState extends State<MenuScreen> {
 
   // ── Helpers ──
 
-  String _formatDate(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    final dayName = _dayNames[date.weekday] ?? '';
-    return '$dayName, ${date.day}. ${date.month}.';
-  }
-
-  String _formatDateShort(String dateStr) {
-    final date = DateTime.parse(dateStr);
-    return '${_dayNames[date.weekday]?.substring(0, 3) ?? ''} ${date.day}.${date.month}.';
-  }
-
   // ── Absence ──
 
   Future<void> _showAbsenceDialog() async {
@@ -795,8 +789,8 @@ class MenuScreenState extends State<MenuScreen> {
 
     if (picked == null || !mounted) return;
 
-    final fromStr = _fmtDateYmd(picked.start);
-    final toStr = _fmtDateYmd(picked.end);
+    final fromStr = fmtYmd(picked.start);
+    final toStr = fmtYmd(picked.end);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -859,7 +853,7 @@ class MenuScreenState extends State<MenuScreen> {
     var day = from;
     while (!day.isAfter(to)) {
       if (day.weekday <= DateTime.friday) {
-        dates.add(_fmtDateYmd(day));
+        dates.add(fmtYmd(day));
       }
       day = day.add(const Duration(days: 1));
     }
@@ -913,7 +907,7 @@ class MenuScreenState extends State<MenuScreen> {
       });
     }
 
-    await AbsenceStore.add(_fmtDateYmd(from), _fmtDateYmd(to));
+    await AbsenceStore.add(fmtYmd(from), fmtYmd(to));
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
@@ -927,9 +921,6 @@ class MenuScreenState extends State<MenuScreen> {
 
     await _fetchMenu(week: _currentWeek);
   }
-
-  String _fmtDateYmd(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   // ══════════════════════════════════════════════════════════════
   // BUILD
@@ -1135,11 +1126,28 @@ class MenuScreenState extends State<MenuScreen> {
 
     final sortedDates = _menu.keys.toList()..sort();
 
+    // One extra leading row: long-press is the only way to reach the score
+    // breakdown and there is nothing on screen that suggests it exists.
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, _navBarPad),
-      itemCount: sortedDates.length,
+      itemCount: sortedDates.length + 1,
       itemBuilder: (context, index) {
-        final date = sortedDates[index];
+        if (index == 0) {
+          return const Padding(
+            padding: EdgeInsets.fromLTRB(6, 0, 6, kSp8),
+            child: Row(
+              children: [
+                Icon(Icons.touch_app_outlined, size: 13, color: kTextMuted),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text('Pridrži jed za razlago ocene',
+                      style: kCaption),
+                ),
+              ],
+            ),
+          );
+        }
+        final date = sortedDates[index - 1];
         final options = _menu[date]!;
         final selectable = _isDaySelectable(date);
         final selectedId = _selections[date];
@@ -1150,7 +1158,7 @@ class MenuScreenState extends State<MenuScreen> {
         final isPartiallyLocked = _partiallyLockedDates.contains(date);
 
         return _DaySection(
-          dateLabel: _formatDate(date),
+          dateLabel: formatDayDate(date),
           options: options,
           selectable: selectable,
           selectedId: selectedId,
@@ -1159,6 +1167,7 @@ class MenuScreenState extends State<MenuScreen> {
           isPartiallyLocked: isPartiallyLocked,
           getScore: (menuId) => _getScore(date, menuId),
           onTap: (opt) => _onOptionTap(date, opt),
+          onExplain: (opt) => _onExplainTap(date, opt),
           onCancelTap: () => _onCancelTap(date),
         );
       },
@@ -1212,6 +1221,7 @@ class _DaySection extends StatelessWidget {
   final bool isPartiallyLocked;
   final double Function(String menuId) getScore;
   final void Function(MealOption) onTap;
+  final void Function(MealOption) onExplain;
   final VoidCallback onCancelTap;
 
   const _DaySection({
@@ -1224,6 +1234,7 @@ class _DaySection extends StatelessWidget {
     required this.isPartiallyLocked,
     required this.getScore,
     required this.onTap,
+    required this.onExplain,
     required this.onCancelTap,
   });
 
@@ -1347,6 +1358,7 @@ class _DaySection extends StatelessWidget {
                   : null,
               tappable: tappable,
               onTap: () => onTap(opt),
+              onExplain: () => onExplain(opt),
             ),
           );
         }),
@@ -1399,6 +1411,7 @@ class _MealCard extends StatelessWidget {
   final MealOption option;
   final bool isSelected;
   final bool isAiPick;
+  final VoidCallback onExplain;
   final bool isOrdered;
   final double? score;
   final int? healthScore;
@@ -1409,6 +1422,7 @@ class _MealCard extends StatelessWidget {
     required this.option,
     required this.isSelected,
     required this.isAiPick,
+    required this.onExplain,
     required this.isOrdered,
     required this.score,
     this.healthScore,
@@ -1427,6 +1441,7 @@ class _MealCard extends StatelessWidget {
         borderColor: accent,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         onTap: tappable ? onTap : null,
+        onLongPress: onExplain,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -12,6 +12,10 @@ lib/
 ├── theme.dart                       # Catppuccin Mocha dark theme, GlassCard/GlassBar/PillChip widgets
 ├── models/
 │   └── meal_option.dart             # MealOption data class (menuId, name, desc, status, locationId, mealType)
+├── util/
+│   └── dates.dart                   # Slovenian day names + YYYY-MM-DD formatting, shared by every screen
+├── widgets/
+│   └── explain_sheet.dart           # "Why this score?" breakdown, opened by long-pressing a meal card
 ├── screens/
 │   ├── onboarding_screen.dart       # First-launch onboarding: welcome, login, AI setup, history scraping, quiz
 │   ├── menu_screen.dart             # Main tab — weekly menu display, AI picks, meal submission
@@ -21,6 +25,7 @@ lib/
 │   ├── log_screen.dart              # Submission history log with filters
 │   └── settings_screen.dart         # Preferences — liked/disliked keywords, menu type rankings
 └── services/
+    ├── app_files.dart               # Filenames + JsonFile/MarkerFile (atomic writes, corrupt-file recovery)
     ├── easistent_client.dart        # HTTP client — login, fetch HTML, parse meals, submit via AJAX
     ├── meal_predictor.dart          # Scoring engine — keyword TF-IDF + menu type bias + preferences
     ├── preference_learner.dart      # Derives auto-preferences from training data (frequency analysis)
@@ -77,6 +82,31 @@ eAsistent locks meal options server-side with no HTML indicator. Detection works
 - Incorporates meal ratings (1-5 stars) as weighted training signal
 - Combines: keyword score + menu type bias + explicit preferences (liked/disliked keywords)
 - `pickBest()` returns highest-scoring available option for a day
+- All knobs live in `PredictorTuning`; `PredictorTuning.legacy` preserves the
+  pre-refactor keyword model so changes can be A/B'd rather than guessed at
+
+**The model must beat "always pick the usual menu".** It once did not: with
+the shipped weighting it scored 3/6 walk-forward where that trivial baseline
+scored 5/6 — the keyword signal carried the largest weight (1.0) while built
+from 56 observations, and it overrode a menu preference held 86% of the time
+(weighted 0.3). The keyword weight is now scaled by
+`days / (days + keywordEvidenceK)`, so the menu habit leads early and the
+keywords take over as they earn it; `wMenuType` is 1.0. That baseline is
+printed by the harness on every run, and
+`test/meal_predictor_test.dart` reproduces the failure so it cannot return.
+
+**Do not tune this model by eye.** `dart run bin/eval_predictor.dart` walks the
+training data forward — train on days `[0, i)`, predict day `i` — and prints
+top-1 and mean rank per variant. Two things it has already caught:
+
+- Feeding it the stored `preferences.json` leaks the answer, because the
+  `auto_*` keywords in that file were derived from every day including the one
+  being predicted. It scored a flat 6/6 until each fold re-derived them from
+  its own training slice. Real out-of-sample is 3/6.
+- Keyword shrinkage looked like a certain win (vocabulary 25 → 118 tokens) but
+  scored 2/6, 2/6, 4/6, 3/6 across k = 1, 2, 4, 8 — non-monotonic, swinging two
+  days out of six. On seven days of data the harness cannot separate these
+  variants, so the shipped keyword model is deliberately unchanged.
 
 ### Auto-Submit (scheduler_service.dart)
 - Monday 16:00: reminder notification via `flutter_local_notifications`
@@ -92,6 +122,15 @@ eAsistent locks meal options server-side with no HTML indicator. Detection works
 - Presents randomized options from the description pool
 - User pick -> saved to training data -> preferences auto-derived -> predictor rebuilt
 - AI pick indicator shows current model's preference for comparison
+
+### Score Explanation (widgets/explain_sheet.dart)
+- Long-press any meal card on the Meni tab
+- `MealPredictor.explain()` returns the same arithmetic `scoreOption` runs,
+  labelled per signal, with the words behind each one
+- The factors are asserted to sum to the score in tests: a breakdown that
+  does not reconcile is a plausible-looking fiction, worse than showing nothing
+- Also reports keyword maturity, so the UI can admit how little the model
+  knows rather than presenting a thin model confidently
 
 ### Meal Rating (main.dart `showRatingDialog`)
 - Daily 13:00 notification prompts user to rate today's meal (1-5 stars)
@@ -136,9 +175,36 @@ iOS differences from Android, all in `scheduler_service.dart`:
 - Notifications need both Android and Darwin settings — iOS reminders are
   silent without `DarwinInitializationSettings` / `DarwinNotificationDetails`.
 
+## Tests
+
+```bash
+flutter test    # 99 tests, no device and no live account needed
+```
+
+- `test/auto_submit_test.dart` — **the Monday rehearsal.** Drives the real
+  `_handleAutoSubmit` against a fake eAsistent on localhost, with only the
+  server origin and the clock replaced. Covers the weekday/hour gate, the
+  weekly marker, absence and already-logged skipping, what the trained model
+  actually orders, and that a hung server or corrupt file cannot take the run
+  down. This is how the unattended path gets exercised without placing a real
+  order.
+- `test/easistent_client_test.dart` — login (including the opaque `v1.` ses
+  cookie), cookie replay, exact submit form fields, session expiry, timeouts,
+  redirect cap. Also against the local fake, so the real cookie jar and
+  redirect code run.
+- `test/fixtures/fake_easistent.dart` — the stand-in server. Not a mock of the
+  client's internals: the client talks to it over a real socket.
+- `test/meal_predictor_test.dart`, `test/json_store_test.dart`,
+  `test/dates_test.dart`, `test/easistent_parser_test.dart`.
+
+Two seams in `scheduler_service.dart` exist only for this:
+`schedulerClientFactory` and `schedulerClockOverride`, both
+`@visibleForTesting`.
+
 ## CLI Test Scripts (bin/)
 
 ```bash
+dart run bin/eval_predictor.dart      # Walk-forward accuracy of the predictor
 dart run bin/test_login.dart          # Test eAsistent login + meal parsing
 dart run bin/test_predictor.dart      # Test predictor scoring against live data
 dart run bin/test_training_flow.dart  # Verify training -> predictor improvement
@@ -162,6 +228,11 @@ These require a `config.json` in the project root with eAsistent credentials: `{
 - Reusable glass widgets: GlassCard, GlassBar, PillChip (defined in theme.dart)
 - Floating glass pill nav bar with 6 tabs: Meni, Trening, Statistika, Zdravje, Dnevnik, Nastavitve
 - All notification/scheduler operations wrapped in try-catch (non-fatal)
+- Persisted files go through `AppFiles` constants and `JsonFile`, never a
+  hand-written path. The background alarm reads the same files and a typo in
+  one copy fails silently at 18:00 with nobody watching
+- Network calls carry a timeout. The auto-submit runs unattended, so a socket
+  that never answers must fail rather than hang
 - Slovenian UI text (menu labels, notifications, dialogs)
 - Status values: `ordered`, `available`, `cancelled`, `none`
 - Training data and preferences seeded from `assets/` on first launch, then stored locally

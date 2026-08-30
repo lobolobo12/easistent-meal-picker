@@ -418,6 +418,10 @@ class GlassCard extends StatelessWidget {
   final Color? borderColor;
   final VoidCallback? onTap;
 
+  /// Long-press is used for "why did it score this?" on meal cards. It never
+  /// carries an action the user cannot reach another way.
+  final VoidCallback? onLongPress;
+
   const GlassCard({
     super.key,
     required this.child,
@@ -427,6 +431,7 @@ class GlassCard extends StatelessWidget {
     this.selected = false,
     this.borderColor,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -477,6 +482,7 @@ class GlassCard extends StatelessWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: onTap,
+                  onLongPress: onLongPress,
                   child: Padding(padding: padding, child: child),
                 ),
               ),

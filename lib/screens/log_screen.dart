@@ -2,16 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/submission_log.dart';
 import '../theme.dart';
-
-const _dayNames = <int, String>{
-  1: 'Ponedeljek',
-  2: 'Torek',
-  3: 'Sreda',
-  4: 'Četrtek',
-  5: 'Petek',
-  6: 'Sobota',
-  7: 'Nedelja',
-};
+import '../util/dates.dart';
 
 /// Bottom gutter. The tab bar insets content on its own now, so this is
 /// just breathing room at the end of a scroll.
@@ -70,15 +61,7 @@ class _LogScreenState extends State<LogScreen> {
     setState(() => _entries = []);
   }
 
-  String _formatMealDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      final dayName = _dayNames[date.weekday] ?? '';
-      return '$dayName, ${date.day}. ${date.month}. ${date.year}';
-    } catch (_) {
-      return dateStr;
-    }
-  }
+  String _formatMealDate(String dateStr) => formatDayDateYear(dateStr);
 
   String _formatTimestamp(String isoStr) {
     try {

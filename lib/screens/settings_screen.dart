@@ -149,9 +149,11 @@ class SettingsScreenState extends State<SettingsScreen> {
     _save();
   }
 
+  /// [newIndex] already accounts for the item being lifted out at
+  /// [oldIndex] — that is the difference between `onReorderItem` and the
+  /// deprecated `onReorder`, which needed the caller to decrement it.
   void _onReorder(int oldIndex, int newIndex) {
     setState(() {
-      if (newIndex > oldIndex) newIndex--;
       final item = _ranking.removeAt(oldIndex);
       _ranking.insert(newIndex, item);
     });
@@ -406,7 +408,7 @@ class SettingsScreenState extends State<SettingsScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _ranking.length,
-            onReorder: _onReorder,
+            onReorderItem: _onReorder,
             proxyDecorator: (child, index, animation) {
               return AnimatedBuilder(
                 animation: animation,

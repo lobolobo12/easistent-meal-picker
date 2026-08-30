@@ -216,8 +216,14 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
     return Column(
       children: [
-        // Stats bar
-        GlassBar(
+        // Round counters. Deliberately not a GlassBar: a full-bleed
+        // translucent band with square corners was the only edge-to-edge
+        // surface on the screen, so it read as a leftover strip sitting on
+        // top of the design rather than part of it. On iOS this kind of
+        // supplementary metadata under a large title is plain content —
+        // it sits directly on the background like everything else.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(kSp16, kSp4, kSp8, 0),
           child: Row(
             children: [
               _StatChip(
@@ -225,7 +231,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
                 label: 'Runda $_roundNumber',
                 color: kAccentBlue,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: kSp8),
               _StatChip(
                 icon: Icons.check_circle_outline,
                 label: 'Ta seja: $_sessionPicks',
@@ -244,7 +250,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
         // Prompt
         const Padding(
-          padding: EdgeInsets.fromLTRB(16, 14, 16, 6),
+          padding: EdgeInsets.fromLTRB(kSp16, kSp12, kSp16, kSp4),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(

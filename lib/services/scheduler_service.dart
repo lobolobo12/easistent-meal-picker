@@ -3,12 +3,14 @@ import 'dart:io';
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/meal_option.dart';
+import '../util/dates.dart';
+import 'app_files.dart';
 import 'easistent_client.dart';
 import 'meal_predictor.dart';
 import 'scheduler_debug_log.dart';
@@ -410,9 +412,8 @@ Future<void> _scheduleIosTasks(tz.TZDateTime now) async {
 /// (menu load and after each submit) to pick up newly logged days.
 Future<void> _scheduleIosRatingReminders(tz.TZDateTime now) async {
   try {
-    final dir = await getApplicationDocumentsDirectory();
 
-    final logFile = File('${dir.path}/submission_log.json');
+    final logFile = await AppFiles.file(AppFiles.submissionLog);
     if (!logFile.existsSync()) return;
     List<dynamic> logData;
     try {
@@ -422,7 +423,7 @@ Future<void> _scheduleIosRatingReminders(tz.TZDateTime now) async {
     }
 
     final ratedDates = <String>{};
-    final ratingsFile = File('${dir.path}/meal_ratings.json');
+    final ratingsFile = await AppFiles.file(AppFiles.ratings);
     if (ratingsFile.existsSync()) {
       try {
         final ratings =
@@ -449,7 +450,7 @@ Future<void> _scheduleIosRatingReminders(tz.TZDateTime now) async {
       final day = now.add(Duration(days: offset));
       if (day.weekday > DateTime.friday) continue;
 
-      final dateStr = _fmtDate(day);
+      final dateStr = fmtYmd(day);
       if (!realSubmissions.contains(dateStr)) continue;
       if (ratedDates.contains(dateStr)) continue;
 
@@ -516,9 +517,8 @@ Future<void> runForegroundCatchUp() async {
     tz.initializeTimeZones();
     final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
     if (now.hour >= 13) {
-      final dir = await getApplicationDocumentsDirectory();
-      final marker = File('${dir.path}/rating_notified_marker.txt');
-      final todayStr = _fmtDate(now);
+      final marker = await AppFiles.file(AppFiles.ratingNotifiedMarker);
+      final todayStr = fmtYmd(now);
       final alreadyShown = marker.existsSync() &&
           (await marker.readAsString()).trim() == todayStr;
       if (!alreadyShown) {
@@ -561,13 +561,37 @@ Future<void> cancelScheduledTasks() async {
 /// 5. Skip days already submitted from this app (submission_log.json)
 /// 6. Use MealPredictor to pick the best option per remaining day
 /// 7. Submit picks, log results, write marker, show notification
+/// Test seam: how the scheduler obtains its client.
+///
+/// The auto-submit path is the one piece of this app that runs unattended,
+/// with real consequences, and it was the only piece with no way to exercise
+/// it short of letting Monday happen. Overriding this lets the suite point it
+/// at a local stand-in server — see `test/auto_submit_test.dart`.
+@visibleForTesting
+EAsistentClient Function(String username, String password)
+    schedulerClientFactory =
+    (username, password) =>
+        EAsistentClient(username: username, password: password);
+
+/// Test seam: the clock the weekday/hour gate reads.
+@visibleForTesting
+tz.TZDateTime Function(tz.Location location)? schedulerClockOverride;
+
+tz.TZDateTime _nowIn(tz.Location location) =>
+    schedulerClockOverride?.call(location) ?? tz.TZDateTime.now(location);
+
+/// Test-only entry point to the unattended Monday submit.
+@visibleForTesting
+Future<void> runAutoSubmitForTesting({bool relaxedGate = false}) =>
+    _handleAutoSubmit(relaxedGate: relaxedGate);
+
 Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
   try {
     // Evaluate the weekday/hour gate in Europe/Ljubljana, not device-local
     // time. Device locale may differ from the scheduled tz, which would
     // silently reject a correctly scheduled fire for travelers.
     tz.initializeTimeZones();
-    final now = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
+    final now = _nowIn(tz.getLocation('Europe/Ljubljana'));
 
     // Safety check: normally only Mondays between 17:00 and 20:00, which is
     // when the alarm fires. [relaxedGate] widens this to Monday 17:00
@@ -588,29 +612,24 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
     }
 
     // Check duplicate marker for this week
-    final dir = await getApplicationDocumentsDirectory();
-    final markerFile = File('${dir.path}/autosubmit_marker.txt');
+    const marker = MarkerFile(AppFiles.autoSubmitMarker);
     final mondayStr = _mondayDateStr(now);
 
-    if (markerFile.existsSync()) {
-      final marker = await markerFile.readAsString();
-      if (marker.trim() == mondayStr) {
-        await SchedulerDebugLog.log(
-            'auto-submit', 'marker-match: already submitted for $mondayStr');
-        return;
-      }
+    if (await marker.matches(mondayStr)) {
+      await SchedulerDebugLog.log(
+          'auto-submit', 'marker-match: already submitted for $mondayStr');
+      return;
     }
 
     // Load credentials from disk (background isolate, no CredentialsStore cache)
-    final credsFile = File('${dir.path}/credentials.json');
+    final credsFile = await AppFiles.file(AppFiles.credentials);
     if (!credsFile.existsSync()) {
       await SchedulerDebugLog.log('auto-submit',
           'bail: credentials.json missing — user not logged in');
       return;
     }
 
-    final credsData =
-        jsonDecode(await credsFile.readAsString()) as Map<String, dynamic>;
+    final credsData = await const JsonFile(AppFiles.credentials).readMap();
     final username = credsData['username'] as String?;
     final password = credsData['password'] as String?;
     if (username == null || password == null) {
@@ -620,29 +639,19 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
     }
     await SchedulerDebugLog.log('auto-submit', 'proceeding — credentials OK');
 
-    // Load training data, preferences, and ratings from disk
-    final trainingFile = File('${dir.path}/training_data.json');
-    final prefsFile = File('${dir.path}/preferences.json');
-    final ratingsFile = File('${dir.path}/meal_ratings.json');
-
-    List<dynamic> trainingData = [];
-    Map<String, dynamic> preferences = {};
-    List<dynamic> ratings = [];
-
-    if (trainingFile.existsSync()) {
-      trainingData =
-          jsonDecode(await trainingFile.readAsString()) as List<dynamic>;
-    }
-    if (prefsFile.existsSync()) {
-      preferences =
-          jsonDecode(await prefsFile.readAsString()) as Map<String, dynamic>;
-    }
-    if (ratingsFile.existsSync()) {
-      try {
-        ratings =
-            jsonDecode(await ratingsFile.readAsString()) as List<dynamic>;
-      } catch (_) {}
-    }
+    // Load training data, preferences, and ratings from disk.
+    //
+    // These went through a bare jsonDecode until the auto-submit rehearsal
+    // in `test/auto_submit_test.dart` caught what that costs: a half-written
+    // training file — precisely what killing this isolate mid-write produces
+    // — threw straight past to the outer catch, so the whole evening's submit
+    // was abandoned and nobody ate what they picked. Reading through JsonFile
+    // degrades to an empty model instead, which still orders a meal.
+    final trainingData =
+        await const JsonFile(AppFiles.trainingData).readList();
+    final preferences =
+        await const JsonFile(AppFiles.preferences).readMap();
+    final ratings = await const JsonFile(AppFiles.ratings).readList();
 
     // Build predictor
     final predictor = MealPredictor.fromData(
@@ -652,7 +661,7 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
     );
 
     // Login and fetch next week's menu
-    final client = EAsistentClient(username: username, password: password);
+    final client = schedulerClientFactory(username, password);
     await client.login();
 
     final html = await client.getMealPage();
@@ -671,28 +680,14 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
     }
 
     // Load existing submission log to check for manual submissions
-    final logFile = File('${dir.path}/submission_log.json');
-    List<dynamic> logData = [];
-    if (logFile.existsSync()) {
-      try {
-        logData = jsonDecode(await logFile.readAsString()) as List<dynamic>;
-      } catch (_) {}
-    }
+    final logData = await const JsonFile(AppFiles.submissionLog).readList();
     final alreadySubmittedDates = <String>{
       for (final entry in logData)
-        if (entry is Map<String, dynamic> && entry['date'] is String)
-          entry['date'] as String,
+        if (entry['date'] is String) entry['date'] as String,
     };
 
     // Load absence ranges to skip absent days
-    final absenceFile = File('${dir.path}/absences.json');
-    List<dynamic> absenceData = [];
-    if (absenceFile.existsSync()) {
-      try {
-        absenceData =
-            jsonDecode(await absenceFile.readAsString()) as List<dynamic>;
-      } catch (_) {}
-    }
+    final absenceData = await const JsonFile(AppFiles.absences).readList();
 
     // Filter to days that need auto-submit. Value is a meal option to
     // select, OR null to request Odjava (cancel whatever is ordered).
@@ -732,7 +727,7 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
 
     // If nothing left to submit, notify and bail
     if (daysToSubmit.isEmpty) {
-      await markerFile.writeAsString(mondayStr);
+      await marker.write(mondayStr);
       await _showResultNotification('Auto-submit', 'Že oddano — preskočim.');
       return;
     }
@@ -783,14 +778,16 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
             'auto': true,
           });
         }
-        await logFile.writeAsString(jsonEncode(logData));
+        // Atomic: this runs in a background isolate the OS may kill at any
+        // moment, and a truncated log is what used to crash the next launch.
+        await const JsonFile(AppFiles.submissionLog).write(logData);
       } catch (_) {
         errors++;
       }
     }
 
     // Write marker to prevent re-submission this week
-    await markerFile.writeAsString(mondayStr);
+    await marker.write(mondayStr);
 
     // Update home-screen widget with fresh data
     try {
@@ -814,13 +811,12 @@ Future<void> _handleAutoSubmit({bool relaxedGate = false}) async {
 /// notification so the user can review/override AI picks before auto-submit.
 Future<void> _handleMenuCheck() async {
   try {
-    final dir = await getApplicationDocumentsDirectory();
 
     // Weekly marker keyed by next week's Monday in Europe/Ljubljana.
     tz.initializeTimeZones();
     final nowTz = tz.TZDateTime.now(tz.getLocation('Europe/Ljubljana'));
     final nextMon = _nextWeekMondayStr(nowTz);
-    final markerFile = File('${dir.path}/menu_available_marker.txt');
+    final markerFile = await AppFiles.file(AppFiles.menuAvailableMarker);
     if (markerFile.existsSync()) {
       final marker = await markerFile.readAsString();
       if (marker.trim() == nextMon) {
@@ -831,14 +827,13 @@ Future<void> _handleMenuCheck() async {
     }
 
     // Load credentials
-    final credsFile = File('${dir.path}/credentials.json');
+    final credsFile = await AppFiles.file(AppFiles.credentials);
     if (!credsFile.existsSync()) {
       await SchedulerDebugLog.log(
           'menu-check', 'bail: credentials.json missing');
       return;
     }
-    final credsData =
-        jsonDecode(await credsFile.readAsString()) as Map<String, dynamic>;
+    final credsData = await const JsonFile(AppFiles.credentials).readMap();
     final username = credsData['username'] as String?;
     final password = credsData['password'] as String?;
     if (username == null || password == null) {
@@ -848,7 +843,7 @@ Future<void> _handleMenuCheck() async {
     }
 
     // Login and fetch next week's menu
-    final client = EAsistentClient(username: username, password: password);
+    final client = schedulerClientFactory(username, password);
     await client.login();
 
     final html = await client.getMealPage();
@@ -913,11 +908,10 @@ Future<void> _handleRatingReminder() async {
       return;
     }
 
-    final dir = await getApplicationDocumentsDirectory();
-    final todayStr = _fmtDate(now);
+    final todayStr = fmtYmd(now);
 
     // Check if there's a real meal submission for today (skip Odjava/absence)
-    final logFile = File('${dir.path}/submission_log.json');
+    final logFile = await AppFiles.file(AppFiles.submissionLog);
     if (!logFile.existsSync()) {
       await SchedulerDebugLog.log(
           'rating', 'skip: no submission log exists yet');
@@ -942,7 +936,7 @@ Future<void> _handleRatingReminder() async {
     }
 
     // Check if already rated today
-    final ratingsFile = File('${dir.path}/meal_ratings.json');
+    final ratingsFile = await AppFiles.file(AppFiles.ratings);
     if (ratingsFile.existsSync()) {
       try {
         final ratings =
@@ -1015,14 +1009,14 @@ tz.TZDateTime _nextTime(tz.TZDateTime from, int hour, int minute) {
 /// Get "YYYY-MM-DD" for this week's Monday.
 String _mondayDateStr(DateTime now) {
   final monday = now.subtract(Duration(days: now.weekday - 1));
-  return _fmtDate(monday);
+  return fmtYmd(monday);
 }
 
 /// Get "YYYY-MM-DD" for NEXT week's Monday.
 String _nextWeekMondayStr(DateTime now) {
   final daysUntilNextMon = (DateTime.monday - now.weekday + 7) % 7;
   final nextMon = now.add(Duration(days: daysUntilNextMon == 0 ? 7 : daysUntilNextMon));
-  return _fmtDate(nextMon);
+  return fmtYmd(nextMon);
 }
 
 /// Check if a date falls within any absence range.
@@ -1036,5 +1030,4 @@ bool _isDateAbsent(List<dynamic> absenceData, String date) {
   return false;
 }
 
-String _fmtDate(DateTime d) =>
-    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+

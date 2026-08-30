@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:home_widget/home_widget.dart';
 
 import '../models/meal_option.dart';
+import '../util/dates.dart';
 import 'meal_predictor.dart';
 
 const _androidWidgetName = 'MealWidgetProvider';
@@ -25,8 +26,8 @@ Future<void> updateHomeWidget({
   if (!Platform.isAndroid) return;
 
   final now = DateTime.now();
-  final todayStr = _fmtDate(now);
-  final tomorrowStr = _fmtDate(now.add(const Duration(days: 1)));
+  final todayStr = fmtYmd(now);
+  final tomorrowStr = fmtYmd(now.add(const Duration(days: 1)));
 
   final todayResult = _resolveMeal(menu, todayStr, selections, predictor);
   final tomorrowResult =
@@ -92,5 +93,3 @@ String _cleanDesc(String desc) {
       .replaceAll(RegExp(r',\s*$'), '');
 }
 
-String _fmtDate(DateTime d) =>
-    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';

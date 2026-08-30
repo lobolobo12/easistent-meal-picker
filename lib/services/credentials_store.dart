@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'app_files.dart';
 
 /// Persistent encrypted storage for eAsistent login credentials.
 ///
@@ -48,38 +46,20 @@ class CredentialsStore {
 
   // ── File-based fallback for background isolates ──
 
-  static File? _cachedFile;
-
-  static Future<File> _getFile() async {
-    if (_cachedFile != null) return _cachedFile!;
-    final dir = await getApplicationDocumentsDirectory();
-    _cachedFile = File('${dir.path}/credentials.json');
-    return _cachedFile!;
-  }
+  static const _file = JsonFile(AppFiles.credentials);
 
   static Future<({String username, String password})?> _loadFromFile() async {
-    try {
-      final file = await _getFile();
-      if (!file.existsSync()) return null;
-      final data =
-          jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      final user = data['username'] as String?;
-      final pass = data['password'] as String?;
-      if (user != null && pass != null && user.isNotEmpty) {
-        return (username: user, password: pass);
-      }
-    } catch (_) {}
+    final data = await _file.readMap();
+    final user = data['username'] as String?;
+    final pass = data['password'] as String?;
+    if (user != null && pass != null && user.isNotEmpty) {
+      return (username: user, password: pass);
+    }
     return null;
   }
 
-  static Future<void> _writeFile(String username, String password) async {
-    final file = await _getFile();
-    await file.writeAsString(
-        jsonEncode({'username': username, 'password': password}));
-  }
+  static Future<void> _writeFile(String username, String password) =>
+      _file.write({'username': username, 'password': password});
 
-  static Future<void> _deleteFile() async {
-    final file = await _getFile();
-    if (file.existsSync()) await file.delete();
-  }
+  static Future<void> _deleteFile() => _file.delete();
 }

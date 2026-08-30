@@ -39,8 +39,8 @@ void main() {
     if (pick == chosen['menu_id'].toString()) hits++;
   }
 
-  print('training days scored: $total');
-  print('predictor reproduces the actual pick: $hits/$total');
+  stdout.writeln('training days scored: $total');
+  stdout.writeln('predictor reproduces the actual pick: $hits/$total');
 
   // Score spread tells us the model is discriminating, not flat.
   final sample = (training.first['options'] as List<dynamic>);
@@ -50,6 +50,6 @@ void main() {
           o['menu_name'].toString(), o['description'].toString())
   ];
   scores.sort();
-  print('score range on one day: '
+  stdout.writeln('score range on one day: '
       '${scores.first.toStringAsFixed(3)} .. ${scores.last.toStringAsFixed(3)}');
 }

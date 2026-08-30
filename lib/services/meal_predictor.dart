@@ -5,13 +5,84 @@ const _stopWords = {
   'da', 'sok', 'vsebuje', 'izdelek', 'sledi', 'laktozo',
 };
 const _minTokenLen = 3;
-const _minTokenFreq = 3;
 
-// Weights for the scoring signals
-const _wKeyword = 1.0;
-const _wMenuType = 0.3;
-const _wManual = 0.4;
-const _wRating = 0.5;
+/// Tunable knobs for the scoring model.
+///
+/// These used to be bare top-level constants, which made it impossible to
+/// score the same data under two settings and compare — so any change to the
+/// model was a guess. `bin/eval_predictor.dart` now walks the training data
+/// forward under both [legacy] and [current] and reports the difference.
+class PredictorTuning {
+  /// Weights for the four scoring signals.
+  final double wKeyword;
+  final double wMenuType;
+  final double wManual;
+  final double wRating;
+
+  /// Tokens seen fewer than this many times are dropped outright.
+  final int minTokenFreq;
+
+  /// Confidence shrinkage for the keyword model: a token's score is scaled by
+  /// `n / (n + k)`, where n is how often it was seen.
+  ///
+  /// The old model had a hard cutoff at three occurrences and nothing else, so
+  /// a token seen twice counted for nothing and a token seen three times
+  /// counted in full. On a dataset this small that discarded most of the
+  /// vocabulary. Shrinkage keeps rare tokens but trusts them less, which is
+  /// what their evidence actually supports. 0 disables it.
+  final double shrinkageK;
+
+  /// How many distinct training days it takes for the keyword signal to
+  /// carry half of [wKeyword].
+  ///
+  /// The keyword score is the noisiest signal in the model and it carried the
+  /// largest weight, which is backwards when it is built from a handful of
+  /// days. Scaling it by `days / (days + k)` lets the menu preference lead
+  /// early and hands influence to the keywords as they earn it. 0 disables
+  /// the scaling.
+  final double keywordEvidenceK;
+
+  /// Same idea for the ratings model, which had no floor at all.
+  ///
+  /// This one is kept on, on a structural argument rather than a measured
+  /// one — there are no ratings in the training data to evaluate against.
+  /// A single 5-star rating gave *every* word in that description the full
+  /// +1 at [wRating], so rating one bread roll highly promoted every meal
+  /// containing the word "kruh" thereafter. Scaling by n/(n+2) leaves a
+  /// first rating a third of its former pull and restores it as evidence
+  /// accumulates; it can only ever damp the weakest evidence.
+  final double ratingShrinkageK;
+
+  const PredictorTuning({
+    this.wKeyword = 1.0,
+    this.wMenuType = 1.0,
+    this.wManual = 0.4,
+    this.wRating = 0.5,
+    this.minTokenFreq = 3,
+    this.shrinkageK = 0,
+    this.ratingShrinkageK = 2.0,
+    this.keywordEvidenceK = 30.0,
+  });
+
+  /// The keyword model exactly as it behaved before, for comparison in
+  /// `bin/eval_predictor.dart`.
+  ///
+  /// Shrinkage looked like an obvious win for a dataset this small — it
+  /// raises the vocabulary from 25 tokens to 118 — but walk-forward
+  /// evaluation could not confirm it. Across k = 1, 2, 4, 8 the top-1 score
+  /// went 2/6, 2/6, 4/6, 3/6: non-monotonic, swinging by two days out of six.
+  /// That is noise, and choosing the best cell of that table would be fitting
+  /// the validation set. So the shipped keyword model is unchanged, and this
+  /// stays here to re-run the comparison once a real season of data exists.
+  static const legacy = PredictorTuning(
+    wMenuType: 0.3,
+    ratingShrinkageK: 0,
+    keywordEvidenceK: 0,
+  );
+
+  /// What the app ships.
+  static const current = PredictorTuning();
+}
 
 // ── Odjava (cancel) fallback threshold ──
 //
@@ -56,6 +127,11 @@ class MealPredictor {
   final List<String> _dislikedKeywords;
   final Map<String, double> _manualMenuScores;
   final Map<String, double> _ratingKeywordScores;
+  final PredictorTuning _tuning;
+
+  /// [PredictorTuning.wKeyword] after evidence scaling — see
+  /// [PredictorTuning.keywordEvidenceK].
+  final double _effectiveWKeyword;
 
   MealPredictor._({
     required Map<String, double> keywordScores,
@@ -64,22 +140,39 @@ class MealPredictor {
     required List<String> dislikedKeywords,
     required Map<String, double> manualMenuScores,
     required Map<String, double> ratingKeywordScores,
+    required PredictorTuning tuning,
+    required double effectiveWKeyword,
   })  : _keywordScores = keywordScores,
         _menuTypeScores = menuTypeScores,
         _likedKeywords = likedKeywords,
         _dislikedKeywords = dislikedKeywords,
         _manualMenuScores = manualMenuScores,
-        _ratingKeywordScores = ratingKeywordScores;
+        _ratingKeywordScores = ratingKeywordScores,
+        _tuning = tuning,
+        _effectiveWKeyword = effectiveWKeyword;
 
   /// Build predictor from training data, user preferences, and optional ratings.
   factory MealPredictor.fromData({
     required List<dynamic> trainingData,
     required Map<String, dynamic> preferences,
     List<dynamic>? ratings,
+    PredictorTuning tuning = PredictorTuning.current,
   }) {
-    final keywordScores = _buildKeywordModel(trainingData);
+    // Distinct dates, not entry count: a manually submitted day is written
+    // to the training file three times for extra weight, so counting rows
+    // would make the model's confidence depend on where the data came from.
+    final trainingDays = <String>{
+      for (final day in trainingData)
+        if (day is Map && day['date'] is String) day['date'] as String,
+    }.length;
+    final effectiveWKeyword = tuning.keywordEvidenceK <= 0
+        ? tuning.wKeyword
+        : tuning.wKeyword *
+            (trainingDays / (trainingDays + tuning.keywordEvidenceK));
+
+    final keywordScores = _buildKeywordModel(trainingData, tuning);
     final menuTypeScores = _buildMenuTypeModel(trainingData);
-    final ratingKeywordScores = _buildRatingModel(ratings ?? []);
+    final ratingKeywordScores = _buildRatingModel(ratings ?? [], tuning);
 
     final liked = [
       ...(preferences['liked_keywords'] as List<dynamic>? ?? [])
@@ -110,13 +203,16 @@ class MealPredictor {
       dislikedKeywords: disliked,
       manualMenuScores: manualMenuScores,
       ratingKeywordScores: ratingKeywordScores,
+      tuning: tuning,
+      effectiveWKeyword: effectiveWKeyword,
     );
   }
 
   /// Learn per-token preference scores from labeled training data.
   /// Uses base-rate correction: with ~8 options/day, random pick rate is
   /// ~12.5%, so that is the neutral point (score 0), not 50%.
-  static Map<String, double> _buildKeywordModel(List<dynamic> data) {
+  static Map<String, double> _buildKeywordModel(
+      List<dynamic> data, PredictorTuning tuning) {
     final chosenCounts = <String, int>{};
     final rejectedCounts = <String, int>{};
     var totalOptions = 0;
@@ -144,11 +240,16 @@ class MealPredictor {
     for (final token in {...chosenCounts.keys, ...rejectedCounts.keys}) {
       final c = chosenCounts[token] ?? 0;
       final r = rejectedCounts[token] ?? 0;
-      if (c + r < _minTokenFreq) continue;
-      final rate = c / (c + r);
-      scores[token] = rate >= baseline
+      final n = c + r;
+      if (n < tuning.minTokenFreq) continue;
+      final rate = c / n;
+      final raw = rate >= baseline
           ? (rate - baseline) / (1 - baseline)
           : (rate - baseline) / baseline;
+      // Shrink toward neutral in proportion to how little evidence there is.
+      final confidence =
+          tuning.shrinkageK <= 0 ? 1.0 : n / (n + tuning.shrinkageK);
+      scores[token] = raw * confidence;
     }
 
     return scores;
@@ -180,7 +281,8 @@ class MealPredictor {
   /// Ratings are normalized to [-1, +1]: rating 3 = 0 (neutral),
   /// rating 5 = +1 (loved), rating 1 = -1 (hated). Each token in the
   /// rated meal's description accumulates the weighted average.
-  static Map<String, double> _buildRatingModel(List<dynamic> ratings) {
+  static Map<String, double> _buildRatingModel(
+      List<dynamic> ratings, PredictorTuning tuning) {
     final tokenSums = <String, double>{};
     final tokenCounts = <String, int>{};
 
@@ -203,9 +305,16 @@ class MealPredictor {
 
     return {
       for (final t in tokenSums.keys)
-        if (tokenCounts[t]! >= 1) t: tokenSums[t]! / tokenCounts[t]!,
+        t: (tokenSums[t]! / tokenCounts[t]!) *
+            (tuning.ratingShrinkageK <= 0
+                ? 1.0
+                : tokenCounts[t]! / (tokenCounts[t]! + tuning.ratingShrinkageK)),
     };
   }
+
+  /// How many tokens survived into the keyword model. Used by the
+  /// evaluation harness to show what a frequency cutoff costs.
+  int get vocabularySize => _keywordScores.length;
 
   /// Score a single menu option. Higher = more preferred.
   double scoreOption(String menuName, String description) {
@@ -252,10 +361,106 @@ class MealPredictor {
       }
     }
 
-    return _wKeyword * keywordScore +
-        _wMenuType * menuScore +
-        _wManual * manualScore +
-        _wRating * ratingScore;
+    return _effectiveWKeyword * keywordScore +
+        _tuning.wMenuType * menuScore +
+        _tuning.wManual * manualScore +
+        _tuning.wRating * ratingScore;
+  }
+
+  /// Break a score down into the signals that produced it.
+  ///
+  /// The model is opaque from the outside: it surfaces one number and a
+  /// highlighted card, and when it is wrong there is no way to tell whether
+  /// it misread the food, is coasting on a menu habit, or is acting on a
+  /// keyword the user set months ago and forgot. This returns the same
+  /// arithmetic [scoreOption] performs, labelled.
+  PickExplanation explain(String menuName, String description) {
+    final tokens = tokenize(description);
+    final descLower = description.toLowerCase();
+    final normName = normalizeMenuName(menuName);
+
+    final known = <MapEntry<String, double>>[
+      for (final t in tokens)
+        if (_keywordScores.containsKey(t))
+          MapEntry(t, _keywordScores[t]!)
+    ];
+    final keywordScore = known.isEmpty
+        ? 0.0
+        : known.map((e) => e.value).reduce((a, b) => a + b) / known.length;
+
+    var menuScore = _menuTypeScores[normName] ?? 0.0;
+    if (_manualMenuScores.isNotEmpty) {
+      menuScore = 0.7 * menuScore + 0.3 * (_manualMenuScores[normName] ?? 0.0);
+    }
+
+    final liked = [
+      for (final kw in _likedKeywords)
+        if (descLower.contains(kw)) kw
+    ];
+    final disliked = [
+      for (final kw in _dislikedKeywords)
+        if (descLower.contains(kw)) kw
+    ];
+    final manualScore = liked.length - disliked.length.toDouble();
+
+    final ratingKnown = <MapEntry<String, double>>[
+      for (final t in tokens)
+        if (_ratingKeywordScores.containsKey(t))
+          MapEntry(t, _ratingKeywordScores[t]!)
+    ];
+    final ratingScore = ratingKnown.isEmpty
+        ? 0.0
+        : ratingKnown.map((e) => e.value).reduce((a, b) => a + b) /
+            ratingKnown.length;
+
+    final drivers = [...known]
+      ..sort((a, b) => b.value.abs().compareTo(a.value.abs()));
+
+    final factors = <ScoreFactor>[
+      ScoreFactor(
+        kind: FactorKind.keyword,
+        contribution: _effectiveWKeyword * keywordScore,
+        terms: [for (final e in drivers.take(4)) (e.key, e.value)],
+        note: known.isEmpty
+            ? 'Nobene znane besede'
+            : 'Iz ${known.length} znanih besed',
+      ),
+      ScoreFactor(
+        kind: FactorKind.menuType,
+        contribution: _tuning.wMenuType * menuScore,
+        terms: const [],
+        // The rate the user actually picks this menu, which is the whole
+        // content of this signal. Repeating the menu's own name here told
+        // the reader nothing they could not see in the title.
+        note: _menuTypeScores.containsKey(normName)
+            ? 'Izbereš ga v ${(_menuTypeScores[normName]! * 100).round()} % primerov'
+            : 'Ni zgodovine za ta meni',
+      ),
+      ScoreFactor(
+        kind: FactorKind.manual,
+        contribution: _tuning.wManual * manualScore,
+        terms: [
+          for (final k in liked) (k, 1.0),
+          for (final k in disliked) (k, -1.0),
+        ],
+        note: liked.isEmpty && disliked.isEmpty ? 'Ni zadetkov' : '',
+      ),
+      ScoreFactor(
+        kind: FactorKind.rating,
+        contribution: _tuning.wRating * ratingScore,
+        terms: const [],
+        note: ratingKnown.isEmpty
+            ? 'Ni ocen za te besede'
+            : 'Iz ${ratingKnown.length} ocenjenih besed',
+      ),
+    ]..sort((a, b) => b.contribution.abs().compareTo(a.contribution.abs()));
+
+    return PickExplanation(
+      total: factors.fold(0.0, (sum, f) => sum + f.contribution),
+      factors: factors,
+      keywordWeight: _effectiveWKeyword,
+      maxKeywordWeight: _tuning.wKeyword,
+    );
   }
 
   /// Score all options for a day. Returns menuId → score.
@@ -265,32 +470,34 @@ class MealPredictor {
       };
 
   /// Pick the best available option for a day. Returns menuId or null.
-  String? pickBest(List<MealOption> options) {
-    String? bestId;
-    var bestScore = double.negativeInfinity;
-
-    for (final opt in options) {
-      if (opt.status != 'available') continue;
-      final score = scoreOption(opt.menuName, opt.description);
-      if (score > bestScore) {
-        bestScore = score;
-        bestId = opt.menuId;
-      }
-    }
-
-    return bestId;
-  }
+  ///
+  /// Only `available` options are candidates: an `ordered` day already has
+  /// the user's choice on it and the callers that use this (auto-submit,
+  /// the widget) must not overwrite one.
+  String? pickBest(List<MealOption> options) => _best(options).menuId;
 
   /// Pick the best option, or recommend Odjava when every available option
   /// is strongly negative.
   ///
   /// Odjava is recommended when:
   ///   - at least one option was scored (so we're not on an unseen menu), AND
-  ///   - no option has a positive score, AND
-  ///   - the best (maximum) score is at or below [kOdjavaScoreThreshold].
+  ///   - the best score is at or below [kOdjavaScoreThreshold].
   ///
-  /// When any of those conditions fail, falls back to [pickBest] behavior.
+  /// The threshold is negative, so this implicitly requires that no positive
+  /// option exists — any positive score would beat the gate.
   PickResult pickBestOrOdjava(List<MealOption> options) {
+    final best = _best(options);
+    if (best.menuId == null) return const PickResult.none();
+    if (best.bestScore! <= kOdjavaScoreThreshold) {
+      return PickResult.odjava(bestScore: best.bestScore!);
+    }
+    return best;
+  }
+
+  /// The single scan both pick methods share. They previously each carried
+  /// their own copy of this loop, so a change to what counts as selectable
+  /// had to be made twice — and the two could silently disagree.
+  PickResult _best(List<MealOption> options) {
     String? bestId;
     var bestScore = double.negativeInfinity;
 
@@ -304,15 +511,6 @@ class MealPredictor {
     }
 
     if (bestId == null) return const PickResult.none();
-
-    // If the best available option is still strongly negative, the user
-    // would hate everything today — recommend Odjava instead. The
-    // threshold is negative, so this also implicitly requires no
-    // positive option exists (any positive score would beat the gate).
-    if (bestScore <= kOdjavaScoreThreshold) {
-      return PickResult.odjava(bestScore: bestScore);
-    }
-
     return PickResult.menu(bestId, score: bestScore);
   }
 }
@@ -341,4 +539,64 @@ class PickResult {
       : this._(menuId: id, bestScore: score);
   const PickResult.odjava({required double bestScore})
       : this._(recommendOdjava: true, bestScore: bestScore);
+}
+
+/// Which signal a [ScoreFactor] came from.
+enum FactorKind { keyword, menuType, manual, rating }
+
+extension FactorKindLabel on FactorKind {
+  /// Slovenian label for the UI.
+  String get label => switch (this) {
+        FactorKind.keyword => 'Sestavine',
+        FactorKind.menuType => 'Navada pri meniju',
+        FactorKind.manual => 'Tvoje nastavitve',
+        FactorKind.rating => 'Tvoje ocene',
+      };
+}
+
+/// One signal's weighted contribution to an option's score.
+class ScoreFactor {
+  final FactorKind kind;
+
+  /// Already multiplied by the signal's weight, so these sum to the total.
+  final double contribution;
+
+  /// The individual words behind this factor, strongest first.
+  final List<(String, double)> terms;
+
+  /// Short human note, e.g. how many known words fed the average.
+  final String note;
+
+  const ScoreFactor({
+    required this.kind,
+    required this.contribution,
+    required this.terms,
+    required this.note,
+  });
+}
+
+/// Why the model scored an option the way it did.
+class PickExplanation {
+  final double total;
+
+  /// Signals, strongest absolute contribution first.
+  final List<ScoreFactor> factors;
+
+  /// The keyword weight actually applied, after evidence scaling.
+  final double keywordWeight;
+
+  /// The weight it would reach with plenty of training data.
+  final double maxKeywordWeight;
+
+  const PickExplanation({
+    required this.total,
+    required this.factors,
+    required this.keywordWeight,
+    required this.maxKeywordWeight,
+  });
+
+  /// How far along the keyword signal is toward its full influence, 0..1.
+  /// Doubles as an honest "how much does this model actually know yet".
+  double get keywordMaturity =>
+      maxKeywordWeight <= 0 ? 0 : keywordWeight / maxKeywordWeight;
 }
